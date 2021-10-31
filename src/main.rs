@@ -41,5 +41,36 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     println!("{}", cleaned);
+    // Find free swap at time of oom kill
+    let re = Regex::new(r"Free swap\s+=.*").unwrap();
+
+    if let Some(x) = re.captures(&cleaned) {
+        let swap = x.get(0).unwrap().as_str();
+        println!("{}", swap)
+    } else {
+        println!("No match for swap");
+    }
+
+    // The first slab_unreclaimable entry in MemInfo contains the total for all zones, in pages
+    let re = Regex::new(r"slab_unreclaimable:(\d+)").unwrap();
+
+    if let Some(x) = re.captures(&cleaned) {
+        let slab = x.get(1).unwrap().as_str();
+        let slab_mib = (slab.parse::<i64>().unwrap() * 4096) / 1024 / 1024;
+        println!("Unreclaimable slab: {} MiB", slab_mib);
+    } else {
+        println!("No match for slab");
+    }
+
+    // Find huge page allocations at time of oom kill
+    let re = Regex::new(r"hugepages_total=\d").unwrap();
+
+    if let Some(x) = re.captures(&cleaned) {
+        let hugepages = x.get(0).unwrap().as_str();
+        println!("{}", hugepages)
+    } else {
+        println!("No match for hugepages");
+    }
+
     Ok(())
 }
