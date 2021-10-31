@@ -1,9 +1,10 @@
 use std::env;
 use std::process;
-use std::fs;
+use std::error::Error;
 use regex::Regex;
+use std::fs;
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let mut args = env::args();
 
     if args.len() < 2 {
@@ -39,4 +40,5 @@ fn main() {
     }
 
     println!("{}", cleaned);
+    Ok(())
 }
