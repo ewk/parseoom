@@ -30,14 +30,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let re = Regex::new(r"(.*)?kernel:\s*(\[\d+\.\d+\])?\s").unwrap();
     let mut cleaned = String::new();
 
-    // Build new string stripping out beginning of line containing log noise and PID column
+    // Strip out beginning of line log noise and PID column brackets
     for line in oom {
-        let s = re.replace_all(&line, "");  // strip out log timestamp noise
-        let s = s.replace("[ ", "");        // clean up PID entry
-        let s = s.replace("]", "");         // clean up PID entry
+        let s = re.replace_all(line, "");   // strip out log timestamp noise
+        let s = s.replace("[ ", "");        // clean up PID entries
+        let s = s.replace("]", "");
 
         cleaned.push_str(&s);
-        cleaned.push_str("\n");
+        cleaned.push('\n');
     }
 
     println!("{}", cleaned);
