@@ -1,0 +1,42 @@
+parseoom - A utility for parsing the output of an oom-kill message
+
+Usage:
+    parseoom $LOGFILE
+
+This is just a special case of a text processing problem, but this
+implementation is in Rust!
+
+Given a log file containing an oom-killer entry, it will report basic data
+points and generate a file called 'ps.out' containing a cleaned up version of
+the process list before a task was selected to be killed.
+
+% parseoom messages
+Free swap  = 0kB
+Unreclaimable slab: 10 MiB
+No match for hugepages
+Processes using most memory:
+
+pid    uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
+1221   106  1221      829        0   1       0             0 avahi-daemon
+2938   999  2938      553        0   0       0             0 gnome-pty-helpe
+1084     0  1084      662        1   0       0             0 upstart-udev-br
+2547   999  2547      510       16   0       0             0 sh
+2407   999  2407      964       24   0       0             0 ssh-agent
+--->8
+2685   999  2685     5196     1581   1       0             0 zeitgeist-daemo
+2664     0  2664     3716     2392   0       0             0 mount.ntfs
+1703     0  1703    17939     9653   0       0             0 Xorg
+2603     0  2603   374634   181503   0       0             0 flasherav
+
+The list of running processes when the oom killer fired has been saved to the file 'ps.out'.
+Run the following command to print the unique processes that were using the most memory.
+
+    awk '{a[$9] += $5} END { for (item in a) {printf "%20s %10s KiB \n", item, a[item]} }' ps.out | sort -rnk2 | head -n 20
+
+
+The regular expressions *should* be flexible enough for most log formats, but so
+far the only reference implementation used for development has been a fictional
+rsyslog format I cobbled together from sources around the web.
+
+Many variations of this program already exist, so there's lots of prior art.
+Special thanks to John Siddle for his version.
