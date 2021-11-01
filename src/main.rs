@@ -96,6 +96,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             sort_output_child.wait()?;
         }
+
+        // Let awk report the top unique commands using memory, because that's what awk is for
+        fs::write("ps.out", ps)?;
+        let unique = r#"
+The list of running processes when the oom killer fired has been saved to the file 'ps.out'.
+Run the following command to print the unique processes that were using the most memory.
+
+    awk '{a[$9] += $5} END { for (item in a) {printf "%20s %10s KiB \n", item, a[item]} }' ps.out | sort -rnk2 | head -n 20
+"#;
+
+        println!("{}", unique);
+
     } else {
         println!("No match for ps");
     }
