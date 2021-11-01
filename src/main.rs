@@ -1,5 +1,6 @@
 use std::env;
 use std::process;
+use std::process::{Command, Stdio};
 use std::error::Error;
 use regex::Regex;
 use std::fs;
@@ -70,6 +71,33 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("{}", hugepages)
     } else {
         println!("No match for hugepages");
+    }
+
+    // Capture the values in the process list after the header
+    let re = Regex::new(r"(?s)pid.+name(.*)Out of memory: Kill process").unwrap();
+
+    // Sort process list by RSS
+    if let Some(x) = re.captures(&cleaned) {
+        let ps = x.get(1).unwrap().as_str().trim();
+
+        println!("Processes using most memory:\n");
+        println!("pid    uid  tgid total_vm      rss cpu oom_adj oom_score_adj name");
+
+        let mut output_child = Command::new("echo")
+            .arg(ps)
+            .stdout(Stdio::piped())
+            .spawn()?;
+
+        if let Some(output) = output_child.stdout.take() {
+            let mut sort_output_child = Command::new("sort")
+                .arg("-nk5")
+                .stdin(output)
+                .spawn()?;
+
+            sort_output_child.wait()?;
+        }
+    } else {
+        println!("No match for ps");
     }
 
     Ok(())
