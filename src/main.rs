@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut args = env::args();
 
     if args.len() < 2 {
-        eprintln!("USAGE: oomparse [filename]");
+        eprintln!("USAGE: parseoom [filename]");
         process::exit(1);
     }
 
