@@ -43,7 +43,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         cleaned.push('\n');
     }
 
-    println!("{}", cleaned);
     // Find free swap at time of oom kill
     let re = Regex::new(r"Free swap\s+=.*").unwrap();
 
