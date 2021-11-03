@@ -17,11 +17,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let filename = args.next().expect("Didn't get a filename");
 
-    // read in only from beginning of last oom kill to end of report
-    // TODO doesn't read the *last* oom messages
-    let contents = fs::read_to_string(filename).expect("Could not read filename");
+    // read from beginning of last oom kill to end of log
+    let s = fs::read_to_string(filename).expect("Could not read filename");
+    let i = s.rfind("invoked oom-killer").ok_or("string 'invoked oom-killer' not found")?;
+    let contents = &s[i..];
 
-    let re = Regex::new(r"(?s)\w+\sinvoked oom-killer.*Out of memory: Kill process.*child")
+    // match from invocation of oom killer to end of report
+    let re = Regex::new(r"(?s)(\w+\s)?invoked oom-killer.*Out of memory: Kill process.*child")
         .unwrap();
     let mat = re.captures(&contents).ok_or("Could not find an oom kill message in this file")?;
     let oom = mat.get(0).expect("Match for 'invoked oom-killer' not found")
