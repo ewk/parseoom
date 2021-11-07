@@ -30,9 +30,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         .as_str()
         .lines();   // convert match to a str iterator
 
-    let re = Regex::new(r"(.*)?kernel:\s*(\[\d+\.\d+\])?\s").unwrap();
+    // Clean up the oom kill report for ease of parsing
     let mut cleaned = String::new();
-
+    let re = Regex::new(r"((\w+\s\d+\s\d+:\d+:\d+\s)?\w+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?").unwrap();
     // Strip out beginning of line log noise and PID column brackets
     for line in oom {
         let s = re.replace_all(line, "");   // strip out log timestamp noise
@@ -114,4 +114,28 @@ Run the following command to print the unique processes that were using the most
     }
 
     Ok(())
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    // Make sure we can match various log formats containing an oom kill
+    fn log_entry_pattern() {
+        let re = Regex::new(r"((\w+\s\d+\s\d+:\d+:\d+\s)?\w+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?").unwrap();
+
+        let l1 = "Oct 24 00:00:11 localhost kernel: [11686.040488]  [<c10e1c15>] dump_header.isra.7+0x85/0xc0";
+        let l2 = "June 25 23:09:46 localhost kernel: numactl invoked oom-killer: gfp_mask=0x2084d0, order=1, oom_score_adj=0";
+        let l3 = "[ 5720.256923] [PID]     uid  tgid total_vm      rss cpu oom_adj oom_score_adj name";
+
+        assert_eq!(re.replace_all(l1, ""),
+            "[<c10e1c15>] dump_header.isra.7+0x85/0xc0");
+        assert_eq!(re.replace_all(l2, ""),
+            "numactl invoked oom-killer: gfp_mask=0x2084d0, order=1, oom_score_adj=0");
+        assert_eq!(re.replace_all(l3, ""),
+            "[PID]     uid  tgid total_vm      rss cpu oom_adj oom_score_adj name");
+    }
+
 }
