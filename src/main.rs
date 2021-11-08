@@ -1,6 +1,5 @@
 use std::env;
 use std::process;
-use std::process::{Command, Stdio};
 use std::error::Error;
 use regex::Regex;
 use std::fs;
@@ -77,25 +76,26 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Capture the values in the process list after the header
     let re = Regex::new(r"(?s)pid.+name(.*)Out of memory: Kill process").unwrap();
 
-    // Sort process list by RSS
+    // Sort processes by memory used and report the commands using the most memory
     if let Some(x) = re.captures(&cleaned) {
         let ps = x.get(1).unwrap().as_str().trim();
 
-        println!("Processes using most memory:\n");
-        println!("pid    uid  tgid total_vm      rss cpu oom_adj oom_score_adj name");
+        // Convert the process list into a matrix of strings
+        let mut v = ps.lines()
+            .map(|s| s.trim().split_whitespace().map(String::from).collect::<Vec<_>>())
+            .collect::<Vec<_>>();
 
-        let mut output_child = Command::new("echo")
-            .arg(ps)
-            .stdout(Stdio::piped())
-            .spawn()?;
+        // The RSS column is 5, but the index is 4. We need to convert RSS from a string
+        // to an integer in order to sort correctly.
+        v.sort_by(|a, b| (a[4].parse::<i64>().unwrap()).cmp(&b[4].parse::<i64>().unwrap()));
 
-        if let Some(output) = output_child.stdout.take() {
-            let mut sort_output_child = Command::new("sort")
-                .arg("-nk5")
-                .stdin(output)
-                .spawn()?;
+        println!("\nProcesses using most memory:\n");
+        println!("pid     uid     tgid  total_vm  rss   cpu oom_adj  oom_score_adj  name");
 
-            sort_output_child.wait()?;
+        // Put the sorted string back together so we can display the results.
+        for line in v {
+            let s: String = line.into_iter().collect::<Vec<String>>().join("\t");
+            println!("{}", s);
         }
 
         // Let awk report the top unique commands using memory, because that's what awk is for
