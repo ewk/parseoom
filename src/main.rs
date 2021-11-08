@@ -1,4 +1,6 @@
+use std::collections::BTreeMap;
 use std::env;
+use std::iter::FromIterator;
 use std::process;
 use std::error::Error;
 use regex::Regex;
@@ -89,25 +91,30 @@ fn main() -> Result<(), Box<dyn Error>> {
         // to an integer in order to sort correctly.
         v.sort_by(|a, b| (a[4].parse::<i64>().unwrap()).cmp(&b[4].parse::<i64>().unwrap()));
 
+        // Create a map with a running total of RSS in use by unique commands
+        let mut commands: BTreeMap<&str, i64> = BTreeMap::new();
+        for line in v.iter() {
+            *commands.entry(&line[8]).or_insert(0) += line[4].parse::<i64>().unwrap();
+        }
+
+        // convert the map back to a vector for sorting
+        let mut command_vec = Vec::from_iter(commands.iter());
+        command_vec.sort_by(|a, b| a.1.cmp(b.1).reverse());
+
+        println!("\nTop 20 unique commands using memory:\n");
+        for line in command_vec.iter().take(20) {
+            println!("{}: {} KiB", line.0, (line.1 * 4096) / 1024);
+        }
+
         println!("\nProcesses using most memory:\n");
         println!("pid     uid     tgid  total_vm  rss   cpu oom_adj  oom_score_adj  name");
 
         // Put the sorted string back together so we can display the results.
+        // FIXME this has to run last so the iterator can consume the vector
         for line in v {
             let s: String = line.into_iter().collect::<Vec<String>>().join("\t");
             println!("{}", s);
         }
-
-        // Let awk report the top unique commands using memory, because that's what awk is for
-        fs::write("ps.out", ps)?;
-        let unique = r#"
-The list of running processes when the oom killer fired has been saved to the file 'ps.out'.
-Run the following command to print the unique processes that were using the most memory.
-
-    awk '{a[$9] += $5} END { for (item in a) {printf "%20s %10s KiB \n", item, a[item]} }' ps.out | sort -rnk2 | head -n 20
-"#;
-
-        println!("{}", unique);
 
     } else {
         println!("No match for ps");
