@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Strip out beginning of line log noise and PID column brackets
     for line in oom {
         let s = re.replace_all(line, "");   // strip out log timestamp noise
-        let s = s.replace("[ ", "");        // clean up PID entries
+        let s = s.replace("[", "");        // clean up PID entries
         let s = s.replace("]", "");
 
         cleaned.push_str(&s);
