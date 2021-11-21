@@ -34,8 +34,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Clean up the oom kill report for ease of parsing
     let mut cleaned = String::new();
     let re = Regex::new(r"((\w+\s\d+\s\d+:\d+:\d+\s)?\w+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?").unwrap();
-    // Strip out beginning of line log noise and PID column brackets
+    // Strip out beginning of line log noise, end of report summary, and PID column brackets
     for line in oom {
+        if Regex::new(r"Out of memory:|oom-kill:|Memory cgroup").unwrap().is_match(line) {
+            continue;
+        }
+
         let s = re.replace_all(line, "");   // strip out log timestamp noise
         let s = s.replace("[", "");        // clean up PID entries
         let s = s.replace("]", "");
@@ -76,7 +80,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Capture the values in the process list after the header
-    let re = Regex::new(r"(?s)pid.+name(.*)Out of memory: Kill process").unwrap();
+    let re = Regex::new(r"(?s)pid.+name(.*)").unwrap();
 
     // Sort processes by memory used and report the commands using the most memory
     if let Some(x) = re.captures(&cleaned) {
