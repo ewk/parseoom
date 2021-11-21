@@ -24,10 +24,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let contents = &s[i..];
 
     // match from invocation of oom killer to end of report
-    let re = Regex::new(r"(?s)(\w+\s)?invoked oom-killer.*Out of memory: Kill process.*child")
+    let re = Regex::new(r"(?s)((\w+\s)?invoked oom-killer.*)[oO]ut of memory:")
         .unwrap();
     let mat = re.captures(&contents).ok_or("Could not find an oom kill message in this file")?;
-    let oom = mat.get(0).expect("Match for 'invoked oom-killer' not found")
+    let oom = mat.get(1).expect("Match for 'invoked oom-killer' not found")
         .as_str()
         .lines();   // convert match to a str iterator
 
