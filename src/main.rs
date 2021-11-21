@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Clean up the oom kill report for ease of parsing
     let mut cleaned = String::new();
-    let re = Regex::new(r"((\w+\s\d+\s\d+:\d+:\d+\s)?\w+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?").unwrap();
+    let re = Regex::new(r"((\w+\s+\d+\s\d+:\d+:\d+\s)?[-\w+]+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?").unwrap();
     // Strip out beginning of line log noise, end of report summary, and PID column brackets
     for line in oom {
         if Regex::new(r"Out of memory:|oom-kill:|Memory cgroup").unwrap().is_match(line) {
