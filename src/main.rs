@@ -48,6 +48,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         cleaned.push('\n');
     }
 
+    // Find total memory
+    let re = Regex::new(r"(\d+) pages RAM").unwrap();
+
+    if let Some(x) = re.captures(&cleaned) {
+        let total_ram = x.get(1).unwrap().as_str();
+        let total_ram_mib = (total_ram.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0 ;
+        println!("Total RAM: {:.1} MiB ", total_ram_mib)
+    } else {
+        println!("No match for total_ram");
+    }
+
     // Find free swap at time of oom kill
     let re = Regex::new(r"Free swap\s+=.*").unwrap();
 
