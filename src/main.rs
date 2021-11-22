@@ -102,10 +102,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .map(|s| s.trim().split_whitespace().map(String::from).collect::<Vec<_>>())
             .collect::<Vec<_>>();
 
-        // The RSS column is 5, but the index is 4. We need to convert RSS from a string
-        // to an integer in order to sort correctly.
-        v.sort_by(|a, b| (a[4].parse::<i64>().unwrap()).cmp(&b[4].parse::<i64>().unwrap()));
-
+        // First identify unique commands using the most memory
         // Create a map with a running total of RSS in use by unique commands
         let mut commands: BTreeMap<&str, i64> = BTreeMap::new();
         for line in v.iter() {
@@ -121,14 +118,21 @@ fn main() -> Result<(), Box<dyn Error>> {
             println!("{}: {} KiB", line.0, (line.1 * 4096) / 1024);
         }
 
+        // Sort and display the ps list
         println!("\nProcesses using most memory:\n");
         println!("pid     uid     tgid  total_vm  rss   cpu oom_adj  oom_score_adj  name");
 
+        // We need to convert RSS from a string to an integer in order to sort correctly.
+        // The RSS column is 5, but the index is 4.
+        v.sort_by(|a, b| (a[4].parse::<i64>().unwrap()).cmp(&b[4].parse::<i64>().unwrap()));
+
         // Put the sorted string back together so we can display the results.
         // FIXME this has to run last so the iterator can consume the vector
-        for line in v {
-            let s: String = line.into_iter().collect::<Vec<String>>().join("\t");
-            println!("{}", s);
+        for line in v.into_iter().rev().take(20) {
+            for x in line.iter() {
+                print!("{}\t", x);
+            }
+            println!();
         }
 
     } else {
