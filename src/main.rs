@@ -74,8 +74,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(x) = re.captures(&cleaned) {
         let slab = x.get(1).unwrap().as_str();
-        let slab_mib = (slab.parse::<i64>().unwrap() * 4096) / 1024 / 1024;
-        println!("Unreclaimable slab: {} MiB", slab_mib);
+        let slab_mib = (slab.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0;
+        println!("Unreclaimable slab: {:.1} MiB", slab_mib);
     } else {
         println!("No match for slab");
     }
