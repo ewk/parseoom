@@ -158,18 +158,33 @@ mod tests {
     #[test]
     // Make sure we can match various log formats containing an oom kill
     fn log_entry_pattern() {
-        let re = Regex::new(r"((\w+\s\d+\s\d+:\d+:\d+\s)?\w+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?").unwrap();
+        let re = Regex::new(r"((\w+\s+\d+\s\d+:\d+:\d+\s)?[-\w+]+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?").unwrap();
 
-        let l1 = "Oct 24 00:00:11 localhost kernel: [11686.040488]  [<c10e1c15>] dump_header.isra.7+0x85/0xc0";
-        let l2 = "June 25 23:09:46 localhost kernel: numactl invoked oom-killer: gfp_mask=0x2084d0, order=1, oom_score_adj=0";
-        let l3 = "[ 5720.256923] [PID]     uid  tgid total_vm      rss cpu oom_adj oom_score_adj name";
+        let t1 = "Oct 24 00:00:11 noplacelikehome kernel: [11686.040488]  [<c10e1c15>] dump_header.isra.7+0x85/0xc0";
+        let t2 = "June 25 23:09:46 localhost kernel: numactl invoked oom-killer: gfp_mask=0x2084d0, order=1, oom_score_adj=0";
+        let t3 = "[ 5720.256923] [PID]     uid  tgid total_vm      rss cpu oom_adj oom_score_adj name";
+        let t4 = "Nov 11 19:47:17 localhost kernel: containerd invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=-999";
+        let t5 = "May 12 13:13:47 local-host kernel: sshd invoked oom-killer: gfp_mask=0x6200ca(GFP_HIGHUSER_MOVABLE), order=0, oom_score_adj=0";
+        let t6 = "Nov 11 15:20:04 home kernel: [ 2323]   999  2323   156297     1709      66      235             0 polkitd";
+        let t7 = "Jun  4 15:36:26 localhost kernel: JIT invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=0";
+        let t8 = "Apr  5 15:06:40 SHOUTYCAPS kernel: httpd invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=0";
 
-        assert_eq!(re.replace_all(l1, ""),
+        assert_eq!(re.replace_all(t1, ""),
             "[<c10e1c15>] dump_header.isra.7+0x85/0xc0");
-        assert_eq!(re.replace_all(l2, ""),
+        assert_eq!(re.replace_all(t2, ""),
             "numactl invoked oom-killer: gfp_mask=0x2084d0, order=1, oom_score_adj=0");
-        assert_eq!(re.replace_all(l3, ""),
+        assert_eq!(re.replace_all(t3, ""),
             "[PID]     uid  tgid total_vm      rss cpu oom_adj oom_score_adj name");
+        assert_eq!(re.replace_all(t4, ""),
+            "containerd invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=-999");
+        assert_eq!(re.replace_all(t5, ""),
+            "sshd invoked oom-killer: gfp_mask=0x6200ca(GFP_HIGHUSER_MOVABLE), order=0, oom_score_adj=0");
+        assert_eq!(re.replace_all(t6, ""),
+            "[ 2323]   999  2323   156297     1709      66      235             0 polkitd");
+        assert_eq!(re.replace_all(t7, ""),
+            "JIT invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=0");
+        assert_eq!(re.replace_all(t8, ""),
+            "httpd invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=0");
     }
 
 }
