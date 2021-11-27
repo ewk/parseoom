@@ -6,6 +6,52 @@ use std::error::Error;
 use regex::Regex;
 use std::fs;
 
+// Parse the meminfo section of the oom kill report and print the results
+fn parse_meminfo(s: &str) {
+    // Find total memory
+    let re = Regex::new(r"(\d+) pages RAM").unwrap();
+
+    if let Some(x) = re.captures(s) {
+        let total_ram = x.get(1).unwrap().as_str();
+        let total_ram_mib = (total_ram.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0 ;
+        // physical memory installed will be more than MemTotal reported by /proc/meminfo
+        println!("Total RAM: {:.1} MiB ", total_ram_mib)
+    } else {
+        println!("No match for total_ram");
+    }
+
+    // Find free swap at time of oom kill
+    let re = Regex::new(r"Free swap\s+=.*").unwrap();
+
+    if let Some(x) = re.captures(s) {
+        let swap = x.get(0).unwrap().as_str();
+        println!("{}", swap)
+    } else {
+        println!("No match for swap");
+    }
+
+    // The first slab_unreclaimable entry in MemInfo contains the total for all zones, in pages
+    let re = Regex::new(r"slab_unreclaimable:(\d+)").unwrap();
+
+    if let Some(x) = re.captures(s) {
+        let slab = x.get(1).unwrap().as_str();
+        let slab_mib = (slab.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0;
+        println!("Unreclaimable slab: {:.1} MiB", slab_mib);
+    } else {
+        println!("No match for slab");
+    }
+
+    // Find huge page allocations at time of oom kill
+    let re = Regex::new(r"hugepages_total=\d").unwrap();
+
+    if let Some(x) = re.captures(s) {
+        let hugepages = x.get(0).unwrap().as_str();
+        println!("{}", hugepages)
+    } else {
+        println!("No match for hugepages");
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let mut args = env::args();
 
@@ -23,72 +69,34 @@ fn main() -> Result<(), Box<dyn Error>> {
     let i = s.rfind("invoked oom-killer").ok_or("string 'invoked oom-killer' not found")?;
     let contents = &s[i..];
 
-    // match from invocation of oom killer to end of report
-    let re = Regex::new(r"(?s)((\w+\s)?invoked oom-killer.*)[oO]ut of memory:")
+    // match from invocation of oom killer to end of process list, just before end of report
+    let oom_kill_re = Regex::new(r"(?s)((\w+\s)?invoked oom-killer.*)[oO]ut of memory:")
         .unwrap();
-    let mat = re.captures(&contents).ok_or("Could not find an oom kill message in this file")?;
+    let mat = oom_kill_re.captures(&contents).ok_or("Could not match an oom kill message in this file")?;
     let oom = mat.get(1).expect("Match for 'invoked oom-killer' not found")
         .as_str()
         .lines();   // convert match to a str iterator
 
     // Clean up the oom kill report for ease of parsing
     let mut cleaned = String::new();
-    let re = Regex::new(r"((\w+\s+\d+\s\d+:\d+:\d+\s)?[-\w+]+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?").unwrap();
+    let log_entry_re = Regex::new(r"((\w+\s+\d+\s\d+:\d+:\d+\s)?[-\w+]+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?").unwrap();
     // Strip out beginning of line log noise, end of report summary, and PID column brackets
     for line in oom {
+        // These patterns appear immediately after the end of the ps list.
+        // Do not include them in the new string so we know where to stop.
         if Regex::new(r"Out of memory:|oom-kill:|Memory cgroup").unwrap().is_match(line) {
             continue;
         }
 
-        let s = re.replace_all(line, "");   // strip out log timestamp noise
-        let s = s.replace("[", "");        // clean up PID entries
+        let s = log_entry_re.replace_all(line, "");   // strip out log timestamp noise
+        let s = s.replace("[", "");                   // clean up PID entries
         let s = s.replace("]", "");
 
         cleaned.push_str(&s);
         cleaned.push('\n');
     }
 
-    // Find total memory
-    let re = Regex::new(r"(\d+) pages RAM").unwrap();
-
-    if let Some(x) = re.captures(&cleaned) {
-        let total_ram = x.get(1).unwrap().as_str();
-        let total_ram_mib = (total_ram.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0 ;
-        println!("Total RAM: {:.1} MiB ", total_ram_mib)
-    } else {
-        println!("No match for total_ram");
-    }
-
-    // Find free swap at time of oom kill
-    let re = Regex::new(r"Free swap\s+=.*").unwrap();
-
-    if let Some(x) = re.captures(&cleaned) {
-        let swap = x.get(0).unwrap().as_str();
-        println!("{}", swap)
-    } else {
-        println!("No match for swap");
-    }
-
-    // The first slab_unreclaimable entry in MemInfo contains the total for all zones, in pages
-    let re = Regex::new(r"slab_unreclaimable:(\d+)").unwrap();
-
-    if let Some(x) = re.captures(&cleaned) {
-        let slab = x.get(1).unwrap().as_str();
-        let slab_mib = (slab.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0;
-        println!("Unreclaimable slab: {:.1} MiB", slab_mib);
-    } else {
-        println!("No match for slab");
-    }
-
-    // Find huge page allocations at time of oom kill
-    let re = Regex::new(r"hugepages_total=\d").unwrap();
-
-    if let Some(x) = re.captures(&cleaned) {
-        let hugepages = x.get(0).unwrap().as_str();
-        println!("{}", hugepages)
-    } else {
-        println!("No match for hugepages");
-    }
+    parse_meminfo(&cleaned);
 
     // Capture the values in the process list after the header
     let re = Regex::new(r"(?s)pid.+name(.*)").unwrap();
