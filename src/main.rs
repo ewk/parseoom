@@ -50,6 +50,17 @@ fn parse_meminfo(s: &str) {
     } else {
         println!("No match for hugepages");
     }
+
+    // Find shared memory
+    let re = Regex::new(r"shmem:(\d+)").unwrap();
+
+    if let Some(x) = re.captures(s) {
+        let shmem = x.get(1).unwrap().as_str();
+        let shmem_mib = (shmem.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0;
+        println!("Shared memory: {:.1} MiB", shmem_mib)
+    } else {
+        println!("No match for shmem");
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
