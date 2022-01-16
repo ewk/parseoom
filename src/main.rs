@@ -180,7 +180,7 @@ mod tests {
     #[test]
     // Make sure we can match various log formats containing an oom kill
     fn log_entry_pattern() {
-        let re = Regex::new(r"((\w+\s+\d+\s\d+:\d+:\d+\s)?[-\w+]+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?").unwrap();
+        let re = Regex::new(LOG_ENTRY_RE).unwrap();
 
         let t1 = "Oct 24 00:00:11 noplacelikehome kernel: [11686.040488]  [<c10e1c15>] dump_header.isra.7+0x85/0xc0";
         let t2 = "June 25 23:09:46 localhost kernel: numactl invoked oom-killer: gfp_mask=0x2084d0, order=1, oom_score_adj=0";
