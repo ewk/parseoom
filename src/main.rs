@@ -56,8 +56,8 @@ fn parse_meminfo(s: &str) {
     let re = Regex::new(HUGEPAGES_RE).unwrap();
 
     if let Some(x) = re.captures(s) {
-        let hugepages = x.get(0).unwrap().as_str();
-        println!("{}", hugepages)
+        let hugepages = x.get(1).unwrap().as_str();
+        println!("Number of allocated huge pages: {}", hugepages)
     } else {
         println!("No match for hugepages");
     }
