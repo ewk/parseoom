@@ -1,10 +1,10 @@
+use regex::Regex;
 use std::collections::BTreeMap;
 use std::env;
+use std::error::Error;
+use std::fs;
 use std::iter::FromIterator;
 use std::process;
-use std::error::Error;
-use regex::Regex;
-use std::fs;
 
 const TOTAL_RAM_RE: &str = r"(\d+) pages RAM";
 const FREE_SWAP_RE: &str = r"Free swap\s+=.*";
