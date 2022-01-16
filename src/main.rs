@@ -9,7 +9,7 @@ use std::fs;
 const TOTAL_RAM_RE: &str = r"(\d+) pages RAM";
 const FREE_SWAP_RE: &str = r"Free swap\s+=.*";
 const UNRECLAIMABLE_SLAB_RE: &str = r"slab_unreclaimable:(\d+)";
-const HUGEPAGES_RE: &str = r"hugepages_total=\d";
+const HUGEPAGES_RE: &str = r"hugepages_total=(\d+)";
 const SHMEM_RE: &str = r"shmem:(\d+)";
 const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*)[oO]ut of memory:";
 const LOG_ENTRY_RE: &str = r"((\w+\s+\d+\s\d+:\d+:\d+\s)?[-\w+]+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?";
