@@ -6,10 +6,21 @@ use std::error::Error;
 use regex::Regex;
 use std::fs;
 
+const TOTAL_RAM_RE: &str = r"(\d+) pages RAM";
+const FREE_SWAP_RE: &str = r"Free swap\s+=.*";
+const UNRECLAIMABLE_SLAB_RE: &str = r"slab_unreclaimable:(\d+)";
+const HUGEPAGES_RE: &str = r"hugepages_total=\d";
+const SHMEM_RE: &str = r"shmem:(\d+)";
+const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*)[oO]ut of memory:";
+const LOG_ENTRY_RE: &str = r"((\w+\s+\d+\s\d+:\d+:\d+\s)?[-\w+]+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?";
+const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
+const PS_LIST_RE: &str = r"(?s)pid.+name(.*)";
+
+
 // Parse the meminfo section of the oom kill report and print the results
 fn parse_meminfo(s: &str) {
     // Find total memory
-    let re = Regex::new(r"(\d+) pages RAM").unwrap();
+    let re = Regex::new(TOTAL_RAM_RE).unwrap();
 
     if let Some(x) = re.captures(s) {
         let total_ram = x.get(1).unwrap().as_str();
@@ -21,7 +32,7 @@ fn parse_meminfo(s: &str) {
     }
 
     // Find free swap at time of oom kill
-    let re = Regex::new(r"Free swap\s+=.*").unwrap();
+    let re = Regex::new(FREE_SWAP_RE).unwrap();
 
     if let Some(x) = re.captures(s) {
         let swap = x.get(0).unwrap().as_str();
@@ -31,7 +42,7 @@ fn parse_meminfo(s: &str) {
     }
 
     // The first slab_unreclaimable entry in MemInfo contains the total for all zones, in pages
-    let re = Regex::new(r"slab_unreclaimable:(\d+)").unwrap();
+    let re = Regex::new(UNRECLAIMABLE_SLAB_RE).unwrap();
 
     if let Some(x) = re.captures(s) {
         let slab = x.get(1).unwrap().as_str();
@@ -42,7 +53,7 @@ fn parse_meminfo(s: &str) {
     }
 
     // Find huge page allocations at time of oom kill
-    let re = Regex::new(r"hugepages_total=\d").unwrap();
+    let re = Regex::new(HUGEPAGES_RE).unwrap();
 
     if let Some(x) = re.captures(s) {
         let hugepages = x.get(0).unwrap().as_str();
@@ -52,7 +63,7 @@ fn parse_meminfo(s: &str) {
     }
 
     // Find shared memory
-    let re = Regex::new(r"shmem:(\d+)").unwrap();
+    let re = Regex::new(SHMEM_RE).unwrap();
 
     if let Some(x) = re.captures(s) {
         let shmem = x.get(1).unwrap().as_str();
@@ -81,8 +92,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let contents = &s[i..];
 
     // match from invocation of oom killer to end of process list, just before end of report
-    let oom_kill_re = Regex::new(r"(?s)((\w+\s)?invoked oom-killer.*)[oO]ut of memory:")
-        .unwrap();
+    let oom_kill_re = Regex::new(OOM_KILL_RE).unwrap();
     let mat = oom_kill_re.captures(&contents).ok_or("Could not match an oom kill message in this file")?;
     let oom = mat.get(1).expect("Match for 'invoked oom-killer' not found")
         .as_str()
@@ -90,12 +100,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Clean up the oom kill report for ease of parsing
     let mut cleaned = String::new();
-    let log_entry_re = Regex::new(r"((\w+\s+\d+\s\d+:\d+:\d+\s)?[-\w+]+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?").unwrap();
+    let log_entry_re = Regex::new(LOG_ENTRY_RE).unwrap();
     // Strip out beginning of line log noise, end of report summary, and PID column brackets
     for line in oom {
         // These patterns appear immediately after the end of the ps list.
         // Do not include them in the new string so we know where to stop.
-        if Regex::new(r"Out of memory:|oom-kill:|Memory cgroup").unwrap().is_match(line) {
+        if Regex::new(PS_LIST_END_RE).unwrap().is_match(line) {
             continue;
         }
 
@@ -110,7 +120,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     parse_meminfo(&cleaned);
 
     // Capture the values in the process list after the header
-    let re = Regex::new(r"(?s)pid.+name(.*)").unwrap();
+    let re = Regex::new(PS_LIST_RE).unwrap();
 
     // Sort processes by memory used and report the commands using the most memory
     if let Some(x) = re.captures(&cleaned) {
