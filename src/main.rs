@@ -14,7 +14,7 @@ const SHMEM_RE: &str = r"shmem:(\d+)";
 const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*)[oO]ut of memory:";
 const LOG_ENTRY_RE: &str = r"((\w+\s+\d+\s\d+:\d+:\d+\s)?[-\w+]+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?";
 const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
-const PS_LIST_RE: &str = r"(?s)pid.+name(.*)";
+const PS_LIST_RE: &str = r"(?s)(pid.+name)(.*)";
 
 
 // Parse the meminfo section of the oom kill report and print the results
@@ -124,7 +124,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Sort processes by memory used and report the commands using the most memory
     if let Some(x) = re.captures(&cleaned) {
-        let ps = x.get(1).unwrap().as_str().trim();
+        let ps_header = x.get(1).unwrap().as_str().trim();
+        let ps = x.get(2).unwrap().as_str().trim();
 
         // Convert the process list into a matrix of strings
         let mut v = ps.lines()
@@ -149,7 +150,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // Sort and display the ps list
         println!("\nProcesses using most memory:\n");
-        println!("pid     uid     tgid  total_vm  rss   cpu oom_adj  oom_score_adj  name");
+        println!("{}", ps_header);
 
         // We need to convert RSS from a string to an integer in order to sort correctly.
         // The RSS column is 5, but the index is 4.
