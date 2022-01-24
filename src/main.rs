@@ -12,10 +12,14 @@ const UNRECLAIMABLE_SLAB_RE: &str = r"slab_unreclaimable:(\d+)";
 const HUGEPAGES_RE: &str = r"hugepages_total=(\d+)";
 const SHMEM_RE: &str = r"shmem:(\d+)";
 const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*)[oO]ut of memory:";
-const LOG_ENTRY_RE: &str = r"((\w+\s+\d+\s\d+:\d+:\d+\s)?[-\w+]+\s(kernel:)\s?)?(\[\s*\d+\.\d+\]\s+)?";
+const LOG_ENTRY_RE: &str = r"(?x)
+    (
+    (\w+\s+\d+\s\d+:\d+:\d+\s)?
+    [-\w+]+\s(kernel:)\s?
+    )?
+    (\[\s*\d+\.\d+\]\s+)?";
 const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
 const PS_LIST_RE: &str = r"(?s)(pid.+name)(.*)";
-
 
 // Parse the meminfo section of the oom kill report and print the results
 fn parse_meminfo(s: &str) {
