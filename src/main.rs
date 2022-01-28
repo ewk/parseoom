@@ -161,7 +161,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         println!("\nTop 20 unique commands using memory:\n");
         for line in command_vec.iter().take(20) {
-            println!("{}: {} KiB", line.0, (line.1 * 4096) / 1024);
+            let rss = *line.1 as f64;
+            println!("{}: {:.1} MiB", line.0, (rss * 4096.0) / 1024.0 / 1024.0);
         }
 
         // Sort and display the ps list
