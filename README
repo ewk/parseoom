@@ -3,40 +3,75 @@ parseoom - A utility for parsing the output of an oom-kill message
 Usage:
     parseoom $LOGFILE
 
-This is just a special case of a text processing problem, but this
-implementation is in Rust!
-
-Given a log file containing an oom-killer entry, it will report basic data
-points and generate a file called 'ps.out' containing a cleaned up version of
-the process list before a task was selected to be killed.
+Given a log file containing an oom-killer report, the 'parseoom' program
+will extract and format relevant data about memory usage at the time the
+oom-killer was invoked. For example, when run with the sample logs from the
+messages file included in this repository, 'parseoom' will generate the
+following output:
 
 % parseoom messages
+Total RAM: 2047.5 MiB
 Free swap  = 0kB
-Unreclaimable slab: 10 MiB
-No match for hugepages
+Unreclaimable slab: 17.4 MiB
+Number of allocated huge pages: 512
+Shared memory: 0.6 MiB
+
+Top 20 unique commands using memory:
+
+clamd: 1649.7 MiB
+rspamd: 294.9 MiB
+mariadbd: 30.0 MiB
+fail2ban-server: 17.1 MiB
+redis-server: 6.1 MiB
+unattended-upgr: 5.8 MiB
+nginx: 3.3 MiB
+config: 1.5 MiB
+freshclam: 1.4 MiB
+znc: 1.1 MiB
+systemd-journal: 0.9 MiB
+rsyslogd: 0.8 MiB
+sshd: 0.8 MiB
+anvil: 0.7 MiB
+systemd-logind: 0.7 MiB
+pickup: 0.6 MiB
+systemd-timesyn: 0.6 MiB
+systemd-udevd: 0.6 MiB
+tlsmgr: 0.6 MiB
+dbus-daemon: 0.5 MiB
+
 Processes using most memory:
 
-pid    uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
-1221   106  1221      829        0   1       0             0 avahi-daemon
-2938   999  2938      553        0   0       0             0 gnome-pty-helpe
-1084     0  1084      662        1   0       0             0 upstart-udev-br
-2547   999  2547      510       16   0       0             0 sh
-2407   999  2407      964       24   0       0             0 ssh-agent
---->8
-2685   999  2685     5196     1581   1       0             0 zeitgeist-daemo
-2664     0  2664     3716     2392   0       0             0 mount.ntfs
-1703     0  1703    17939     9653   0       0             0 Xorg
-2603     0  2603   374634   181503   0       0             0 flasherav
+pid     uid  tgid total_vm      rss pgtables_bytes swapents oom_score_adj name
+517     111     517     590364  422324  4395008 107099  0       clamd
+1682    108     1682    67131   16509   421888  7811    0       rspamd
+1680    108     1680    65038   14927   380928  8231    0       rspamd
+584     108     584     64811   14737   393216  8513    0       rspamd
+1677    108     1677    64811   14698   376832  8305    0       rspamd
+1683    108     1683    64811   14614   376832  8614    0       rspamd
+669     106     669     269508  7688    323584  12110   0       mariadbd
+590     0       590     177664  4383    208896  343     0       fail2ban-server
+581     112     581     16276   1567    110592  197     0       redis-server
+587     0       587     27165   1488    110592  635     0       unattended-upgr
+609     33      609     17517   519     110592  88      0       nginx
+598     0       598     1891    378     53248   12      0       config
+573     111     573     33216   368     114688  326     0       freshclam
+607     0       607     17458   333     102400  114     0       nginx
+589     998     589     32026   291     118784  14      0       znc
+199     0       199     14838   226     102400  14      -250    systemd-journal
+497     0       497     55185   209     77824   33      0       rsyslogd
+594     0       594     3323    207     69632   32      -1000   sshd
+505     0       505     3438    188     69632   18      0       systemd-logind
+7180    107     7180    10061   164     73728   0       0       pickup
 
-The list of running processes when the oom killer fired has been saved to the file 'ps.out'.
-Run the following command to print the unique processes that were using the most memory.
 
-    awk '{a[$9] += $5} END { for (item in a) {printf "%20s %10s KiB \n", item, a[item]} }' ps.out | sort -rnk2 | head -n 20
+I wrote this program to improve my understanding of Rust by implementing a
+non-trivial utility in the language. I make no claims regarding its fitness of
+purpose. (There are certainly better language choices for processing text.)
 
+This program is capable of cleaning up and parsing most log noise, but
+edge cases may still be lurking out there in the real world. This utility is not
+robust enough to handle corrupted logs (which are not unusual in the presence of
+memory pressure), unexpected linebreaks, or Murphy's law.
 
-The regular expressions *should* be flexible enough for most log formats, but so
-far the only reference implementation used for development has been a fictional
-rsyslog format I cobbled together from sources around the web.
-
-Many variations of this program already exist, so there's lots of prior art.
-Special thanks to John Siddle for his version.
+Many variations of an omm-killer parsing utility already exist, so there's lots of
+prior art. Special thanks to John Siddle for sharing his version!

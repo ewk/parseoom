@@ -1,0 +1,98 @@
+Dec 20 03:17:52 localhost kernel: [20401658.918112] [UFW BLOCK] IN=eth0 OUT= MAC=f2:3c:91:e2:47:cc:00:1b:54:c2:50:c1:08:00 SRC=45.134.26.57 DST=72.14.187.238 LEN=40 TOS=0x00 PREC=0x00 TTL=244 ID=55235 PROTO=TCP SPT=44209 DPT=23758 WINDOW=1024 RES=0x00 SYN URGP=0
+Dec 20 03:17:52 localhost kernel: [75669.581768] f2b/f.postfix invoked oom-killer: gfp_mask=0x100cca(GFP_HIGHUSER_MOVABLE), order=0, oom_score_adj=0
+Dec 20 03:17:52 localhost kernel: [75669.585004] CPU: 0 PID: 754 Comm: f2b/f.postfix Not tainted 5.10.0-10-amd64 #1 Debian 5.10.84-1
+Dec 20 03:17:52 localhost kernel: [75669.586246] Hardware name: QEMU Standard PC (Q35 + ICH9, 2009), BIOS rel-1.12.0-0-ga698c8995f-prebuilt.qemu.org 04/01/2014
+Dec 20 03:17:52 localhost kernel: [75669.587879] Call Trace:
+Dec 20 03:17:52 localhost kernel: [75669.588381]  dump_stack+0x6b/0x83
+Dec 20 03:17:52 localhost kernel: [75669.588921]  dump_header+0x4a/0x1f0
+Dec 20 03:17:52 localhost kernel: [75669.589486]  oom_kill_process.cold+0xb/0x10
+Dec 20 03:17:52 localhost kernel: [75669.590099]  out_of_memory+0x1bd/0x500
+Dec 20 03:17:52 localhost kernel: [75669.590671]  __alloc_pages_slowpath.constprop.0+0xb8c/0xc60
+Dec 20 03:17:52 localhost kernel: [75669.591502]  __alloc_pages_nodemask+0x2da/0x310
+Dec 20 03:17:52 localhost kernel: [75669.592209]  pagecache_get_page+0x16d/0x380
+Dec 20 03:17:52 localhost kernel: [75669.592844]  filemap_fault+0x69e/0x900
+Dec 20 03:17:52 localhost kernel: [75669.593508]  ? xas_load+0x5/0x70
+Dec 20 03:17:52 localhost kernel: [75669.594043]  ext4_filemap_fault+0x2d/0x40 [ext4]
+Dec 20 03:17:52 localhost kernel: [75669.594770]  __do_fault+0x36/0x120
+Dec 20 03:17:52 localhost kernel: [75669.595293]  handle_mm_fault+0x11e7/0x1bf0
+Dec 20 03:17:52 localhost kernel: [75669.595956]  do_user_addr_fault+0x1b8/0x3f0
+Dec 20 03:17:52 localhost kernel: [75669.596620]  ? switch_fpu_return+0x40/0xb0
+Dec 20 03:17:52 localhost kernel: [75669.597298]  exc_page_fault+0x78/0x160
+Dec 20 03:17:52 localhost kernel: [75669.597910]  ? asm_exc_page_fault+0x8/0x30
+Dec 20 03:17:52 localhost kernel: [75669.598558]  asm_exc_page_fault+0x1e/0x30
+Dec 20 03:17:52 localhost kernel: [75669.599194] RIP: 0033:0x7fa6155d9ad8
+Dec 20 03:17:52 localhost kernel: [75669.599819] Code: Unable to access opcode bytes at RIP 0x7fa6155d9aae.
+Dec 20 03:17:52 localhost kernel: [75669.600914] RSP: 002b:00007fa5ef7fcf50 EFLAGS: 00010246
+Dec 20 03:17:52 localhost kernel: [75669.601780] RAX: ffffffffffffff92 RBX: 00007fa5ef7fcfb0 RCX: 00007fa6155d9ad8
+Dec 20 03:17:52 localhost kernel: [75669.602850] RDX: 0000000000000000 RSI: 0000000000000089 RDI: 000000000093a568
+Dec 20 03:17:52 localhost kernel: [75669.603962] RBP: 000000000093a540 R08: 0000000000000000 R09: 00000000ffffffff
+Dec 20 03:17:52 localhost kernel: [75669.605093] R10: 00007fa5ef7fd060 R11: 0000000000000246 R12: 0000000000000000
+Dec 20 03:17:52 localhost kernel: [75669.606199] R13: 000000000093a570 R14: 00007fa5ef7fd060 R15: 000000000093a568
+Dec 20 03:17:52 localhost kernel: [75669.607352] Mem-Info:
+Dec 20 03:17:52 localhost kernel: [75669.607722] active_anon:69704 inactive_anon:407086 isolated_anon:0
+Dec 20 03:17:52 localhost kernel: [75669.607722]  active_file:14 inactive_file:66 isolated_file:2
+Dec 20 03:17:52 localhost kernel: [75669.607722]  unevictable:0 dirty:0 writeback:0
+Dec 20 03:17:52 localhost kernel: [75669.607722]  slab_reclaimable:4158 slab_unreclaimable:4465
+Dec 20 03:17:52 localhost kernel: [75669.607722]  mapped:70 shmem:147 pagetables:2089 bounce:0
+Dec 20 03:17:52 localhost kernel: [75669.607722]  free:13191 free_pcp:370 free_cma:0
+Dec 20 03:17:52 localhost kernel: [75669.612534] Node 0 active_anon:278816kB inactive_anon:1628344kB active_file:56kB inactive_file:264kB unevictable:0kB isolated(anon):0kB isolated(file):8kB mapped:280kB dirty:0kB writeback:0kB shmem:588kB shmem_thp: 0kB shmem_pmdmapped: 0kB anon_thp: 856064kB writeback_tmp:0kB kernel_stack:2192kB all_unreclaimable? no
+Dec 20 03:17:52 localhost kernel: [75669.616936] Node 0 DMA free:8092kB min:356kB low:444kB high:532kB reserved_highatomic:0KB active_anon:12kB inactive_anon:7756kB active_file:0kB inactive_file:0kB unevictable:0kB writepending:0kB present:15992kB managed:15908kB mlocked:0kB pagetables:20kB bounce:0kB free_pcp:0kB local_pcp:0kB free_cma:0kB
+Dec 20 03:17:52 localhost kernel: [75669.620910] lowmem_reserve[]: 0 1935 1935 1935 1935
+Dec 20 03:17:52 localhost kernel: [75669.621683] Node 0 DMA32 free:44672kB min:44696kB low:55868kB high:67040kB reserved_highatomic:0KB active_anon:
+278804kB inactive_anon:1620588kB active_file:56kB inactive_file:264kB unevictable:0kB writepending:0kB present:2080624kB managed:2014556kB mlocked:0kB pagetables:8336kB bounce:0kB free_pcp:1480kB local_pcp:1480kB free_cma:0kB
+Dec 20 03:17:52 localhost kernel: [75669.626325] lowmem_reserve[]: 0 0 0 0 0
+Dec 20 03:17:52 localhost kernel: [75669.626931] Node 0 DMA: 1*4kB (U) 3*8kB (UME) 2*16kB (E) 3*32kB (ME) 2*64kB (U) 3*128kB (UME) 5*256kB (UME) 4*5 12kB (ME) 2*1024kB (UE) 1*2048kB (E) 0*4096kB = 8092kB
+Dec 20 03:17:52 localhost kernel: [75669.629228] Node 0 DMA32: 206*4kB (UME) 305*8kB (UE) 322*16kB (UME) 168*32kB (UME) 93*64kB (UME) 35*128kB (UME) 6*256kB (UME) 5*512kB (UME) 0*1024kB 0*2048kB 4*4096kB (M) = 44704kB
+Dec 20 03:17:52 localhost kernel: [75669.631773] Node 0 hugepages_total=512 hugepages_free=0 hugepages_surp=0 hugepages_size=1048576kB
+Dec 20 03:17:52 localhost kernel: [75669.633105] Node 0 hugepages_total=512 hugepages_free=0 hugepages_surp=0 hugepages_size=2048kB
+Dec 20 03:17:52 localhost kernel: [75669.634382] 15881 total pagecache pages
+Dec 20 03:17:52 localhost kernel: [75669.634966] 15642 pages in swap cache
+Dec 20 03:17:52 localhost kernel: [75669.635532] Swap cache stats: add 131944, delete 116302, find 3920/4316
+Dec 20 03:17:52 localhost kernel: [75669.636534] Free swap  = 0kB
+Dec 20 03:17:52 localhost kernel: [75669.637103] Total swap = 524284kB
+Dec 20 03:17:52 localhost kernel: [75669.637758] 524154 pages RAM
+Dec 20 03:17:52 localhost kernel: [75669.638377] 0 pages HighMem/MovableOnly
+Dec 20 03:17:52 localhost kernel: [75669.639169] 16538 pages reserved
+Dec 20 03:17:52 localhost kernel: [75669.639770] 0 pages hwpoisoned
+Dec 20 03:17:52 localhost kernel: [75669.640328] Tasks state (memory values in pages):
+Dec 20 03:17:52 localhost kernel: [75669.641206] [  pid  ]   uid  tgid total_vm      rss pgtables_bytes swapents oom_score_adj name
+Dec 20 03:17:52 localhost kernel: [75669.642775] [    199]     0   199    14838      226   102400       14          -250 systemd-journal
+Dec 20 03:17:52 localhost kernel: [75669.644513] [    255]     0   255     5316      159    69632       37         -1000 systemd-udevd
+Dec 20 03:17:52 localhost kernel: [75669.646141] [    277]   101   277    22094      164    73728        9             0 systemd-timesyn
+Dec 20 03:17:52 localhost kernel: [75669.648132] [    348]     0   348     2067      138    53248      787             0 haveged
+Dec 20 03:17:52 localhost kernel: [75669.649780] [    489]     0   489     1671       38    45056       30             0 cron
+Dec 20 03:17:52 localhost kernel: [75669.651467] [    491]   104   491     2045      139    57344        2          -900 dbus-daemon
+Dec 20 03:17:52 localhost kernel: [75669.653301] [    497]     0   497    55185      209    77824       33             0 rsyslogd
+Dec 20 03:17:52 localhost kernel: [75669.655040] [    505]     0   505     3438      188    69632       18             0 systemd-logind
+Dec 20 03:17:52 localhost kernel: [75669.656829] [    517]   111   517   590364   422324  4395008   107099             0 clamd
+Dec 20 03:17:52 localhost kernel: [75669.658616] [    573]   111   573    33216      368   114688      326             0 freshclam
+Dec 20 03:17:52 localhost kernel: [75669.660373] [    574]     0   574     1120       52    45056       35             0 dovecot
+Dec 20 03:17:52 localhost kernel: [75669.661958] [    581]   112   581    16276     1567   110592      197             0 redis-server
+Dec 20 03:17:52 localhost kernel: [75669.663579] [    584]   108   584    64811    14737   393216     8513             0 rspamd
+Dec 20 03:17:52 localhost kernel: [75669.665156] [    587]     0   587    27165     1488   110592      635             0 unattended-upgr
+Dec 20 03:17:52 localhost kernel: [75669.666877] [    589]   998   589    32026      291   118784       14             0 znc
+Dec 20 03:17:52 localhost kernel: [75669.668332] [    590]     0   590   177664     4383   208896      343             0 fail2ban-server
+Dec 20 03:17:52 localhost kernel: [75669.670024] [    594]     0   594     3323      207    69632       32         -1000 sshd
+Dec 20 03:17:52 localhost kernel: [75669.671553] [    596]   109   596     1039       26    49152        5             0 anvil
+Dec 20 03:17:52 localhost kernel: [75669.673083] [    597]     0   597     1104       63    45056       33             0 log
+Dec 20 03:17:52 localhost kernel: [75669.674675] [    598]     0   598     1891      378    53248       12             0 config
+Dec 20 03:17:52 localhost kernel: [75669.676209] [    602]     0   602     1446       29    49152        0             0 agetty
+Dec 20 03:17:52 localhost kernel: [75669.677693] [    605]     0   605     1354       30    49152        0             0 agetty
+Dec 20 03:17:52 localhost kernel: [75669.679237] [    607]     0   607    17458      333   102400      114             0 nginx
+Dec 20 03:17:52 localhost kernel: [75669.680727] [    609]    33   609    17517      519   110592       88             0 nginx
+Dec 20 03:17:52 localhost kernel: [75669.682257] [    669]   106   669   269508     7688   323584    12110             0 mariadbd
+Dec 20 03:17:52 localhost kernel: [75669.683786] [    942]     0   942     9997       84    77824       81             0 master
+Dec 20 03:17:52 localhost kernel: [75669.685292] [    947]   107   947    10110      112    69632       54             0 qmgr
+Dec 20 03:17:52 localhost kernel: [75669.686775] [   1677]   108  1677    64811    14698   376832     8305             0 rspamd
+Dec 20 03:17:52 localhost kernel: [75669.688420] [   1680]   108  1680    65038    14927   380928     8231             0 rspamd
+Dec 20 03:17:52 localhost kernel: [75669.690061] [   1682]   108  1682    67131    16509   421888     7811             0 rspamd
+Dec 20 03:17:52 localhost kernel: [75669.691720] [   1683]   108  1683    64811    14614   376832     8614             0 rspamd
+Dec 20 03:17:52 localhost kernel: [75669.693413] [   3825]   109  3825     2357      112    53248        0             0 stats
+Dec 20 03:17:52 localhost kernel: [75669.695087] [   3837]   107  3837    11012      148    73728       95             0 tlsmgr
+Dec 20 03:17:52 localhost kernel: [75669.696832] [   7180]   107  7180    10061      164    73728        0             0 pickup
+Dec 20 03:17:52 localhost kernel: [75669.698500] [   7298]   107  7298    10060      163    65536        0             0 anvil
+Dec 20 03:17:52 localhost kernel: [75669.700103] oom-kill:constraint=CONSTRAINT_NONE,nodemask=(null),cpuset=/,mems_allowed=0,global_oom,task_memcg=/system.slice/clamav-daemon.service,task=clamd,pid=517,uid=111
+Dec 20 03:17:52 localhost kernel: [75669.703275] Out of memory: Killed process 517 (clamd) total-vm:2361456kB, anon-rss:1689296kB, file-rss:0kB, shmem-rss:0kB, UID:111 pgtables:4292kB oom_score_adj:0
+Dec 20 03:17:52 localhost kernel: [75669.884223] oom_reaper: reaped process 517 (clamd), now anon-rss:0kB, file-rss:0kB, shmem-rss:0kB
+Dec 20 03:17:52 localhost kernel: [20401616.476879] [UFW BLOCK] IN=eth0 OUT= MAC=f2:3c:91:e2:47:cc:00:1b:54:c2:50:c1:08:00 SRC=89.248.165.204 DST=72.14.187.238 LEN=40 TOS=0x00 PREC=0x00 TTL=243 ID=39600 PROTO=TCP SPT=40402 DPT=52734 WINDOW=1024 RES=0x00 SYN URGP=0
+Dec 20 03:17:52 localhost kernel: [20401634.577182] [UFW BLOCK] IN=eth0 OUT= MAC=f2:3c:91:e2:47:cc:00:26:51:c4:00:41:08:00 SRC=45.135.232.162 DST=72.14.187.238 LEN=40 TOS=0x00 PREC=0x00 TTL=242 ID=48570 PROTO=TCP SPT=44663 DPT=11541 WINDOW=1024 RES=0x00 SYN URGP=0
