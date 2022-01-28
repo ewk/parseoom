@@ -112,10 +112,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut cleaned = String::new();
     let log_entry_re = Regex::new(LOG_ENTRY_RE).unwrap();
     // Strip out beginning of line log noise, end of report summary, and PID column brackets
+    let oom_end = Regex::new(PS_LIST_END_RE).unwrap();
     for line in oom {
         // These patterns appear immediately after the end of the ps list.
         // Do not include them in the new string so we know where to stop.
-        if Regex::new(PS_LIST_END_RE).unwrap().is_match(line) {
+        if oom_end.is_match(line) {
             continue;
         }
 
