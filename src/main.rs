@@ -91,11 +91,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let filename = args.next().expect("Didn't get a filename");
 
     // read from beginning of last oom kill to end of log
-    let s = fs::read_to_string(filename).expect("Could not read filename");
-    let i = s
+    let input = fs::read_to_string(filename).expect("Could not read filename");
+    let i = input
         .rfind("invoked oom-killer")
         .ok_or("string 'invoked oom-killer' not found")?;
-    let contents = &s[i..];
+    let contents = &input[i..];
 
     // match from invocation of oom killer to end of process list, just before end of report
     let oom_kill_re = Regex::new(OOM_KILL_RE).unwrap();
