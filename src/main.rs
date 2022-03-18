@@ -12,12 +12,6 @@ const UNRECLAIMABLE_SLAB_RE: &str = r"slab_unreclaimable:(\d+)";
 const HUGEPAGES_RE: &str = r"hugepages_total=(\d+)";
 const SHMEM_RE: &str = r"shmem:(\d+)";
 const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*)[oO]ut of memory:";
-const LOG_ENTRY_RE: &str = r"(?x)
-    (
-    (\w+\s+\d+\s\d+:\d+:\d+\s)?
-    [-\w+]+\s(kernel:)\s?
-    )?
-    (\[\s*\d+\.\d+\]\s+)?";
 const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
 const PS_LIST_RE: &str = r"(?s)(pid.+name)(.*)";
 
@@ -103,16 +97,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         .captures(contents)
         .ok_or("Could not match an oom kill message in this file")?;
     let oom = mat
-        .get(1)
+        .get(0)
         .expect("Match for 'invoked oom-killer' not found")
         .as_str()
         .lines(); // convert match to a str iterator
 
     // Clean up the oom kill report for ease of parsing
     let mut cleaned = String::new();
-    let log_entry_re = Regex::new(LOG_ENTRY_RE).unwrap();
-    // Strip out beginning of line log noise, end of report summary, and PID column brackets
     let oom_end = Regex::new(PS_LIST_END_RE).unwrap();
+
+    // Strip out end of report summary and PID column brackets
     for line in oom {
         // These patterns appear immediately after the end of the ps list.
         // Do not include them in the new string so we know where to stop.
@@ -120,8 +114,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             continue;
         }
 
-        let s = log_entry_re.replace_all(line, ""); // strip out log timestamp noise
-        let s = s.replace("[", ""); // clean up PID entries
+        let s = line.replace("[", ""); // clean up PID entries
         let s = s.replace("]", "");
 
         cleaned.push_str(&s);
