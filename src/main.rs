@@ -14,6 +14,7 @@ const SHMEM_RE: &str = r"shmem:(\d+)";
 const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*)[oO]ut of memory:";
 const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
 const PS_LIST_RE: &str = r"(?s)(pid.+name)(.*)";
+const PS_LIST_HEADER: &str = r".*pid.+name";
 
 // Parse the meminfo section of the oom kill report and print the results
 fn parse_meminfo(s: &str) {
@@ -123,12 +124,26 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     parse_meminfo(&cleaned);
 
+    // Capture the process header and find the position of the 'pid' column
+    let re = Regex::new(PS_LIST_HEADER).unwrap();
+    let ps_header = re
+        .captures(&cleaned)
+        .unwrap()
+        .get(0)
+        .unwrap()
+        .as_str()
+        .trim();
+    let header_vec = ps_header
+        .split_whitespace()
+        .map(str::to_string)
+        .collect::<Vec<_>>();
+    let pid_col = header_vec.iter().position(|x| x == "pid").unwrap();
+
     // Capture the values in the process list after the header
     let re = Regex::new(PS_LIST_RE).unwrap();
 
     // Sort processes by memory used and report the commands using the most memory
     if let Some(x) = re.captures(&cleaned) {
-        let ps_header = x.get(1).unwrap().as_str().trim();
         let ps = x.get(2).unwrap().as_str().trim();
 
         // Convert the process list into a matrix of strings
@@ -146,7 +161,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Create a map with a running total of RSS in use by unique commands
         let mut commands: BTreeMap<&str, i64> = BTreeMap::new();
         for line in v.iter() {
-            *commands.entry(&line[8]).or_insert(0) += line[4].parse::<i64>().unwrap();
+            *commands.entry(&line[pid_col + 8]).or_insert(0) +=
+                line[pid_col + 4].parse::<i64>().unwrap();
         }
 
         // convert the map back to a vector for sorting
@@ -161,19 +177,39 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // Sort and display the ps list
         println!("\nProcesses using most memory:\n");
-        println!("{}", ps_header);
+        println!(
+            "{:^7} {:>5} {:>5} {:>8} {:>8} {:<14} {:<8} {:<13} {:<4}",
+            header_vec[pid_col],
+            header_vec[pid_col + 1],
+            header_vec[pid_col + 2],
+            header_vec[pid_col + 3],
+            header_vec[pid_col + 4],
+            header_vec[pid_col + 5],
+            header_vec[pid_col + 6],
+            header_vec[pid_col + 7],
+            header_vec[pid_col + 8]
+        );
 
         // We need to convert RSS from a string to an integer in order to sort correctly.
-        // The RSS column is 5, but the index is 4.
-        v.sort_by(|a, b| (a[4].parse::<i64>().unwrap()).cmp(&b[4].parse::<i64>().unwrap()));
+        v.sort_by(|a, b| {
+            (a[pid_col + 4].parse::<i64>().unwrap()).cmp(&b[pid_col + 4].parse::<i64>().unwrap())
+        });
 
         // Put the sorted string back together so we can display the results.
         // FIXME this has to run last so the iterator can consume the vector
         for line in v.into_iter().rev().take(20) {
-            for x in line.iter() {
-                print!("{}\t", x);
-            }
-            println!();
+            println!(
+                "{:>7} {:>5} {:>5} {:>8} {:>8} {:^14} {:>8} {:>13} {:<15}",
+                line[pid_col],
+                line[pid_col + 1],
+                line[pid_col + 2],
+                line[pid_col + 3],
+                line[pid_col + 4],
+                line[pid_col + 5],
+                line[pid_col + 6],
+                line[pid_col + 7],
+                line[pid_col + 8]
+            );
         }
     } else {
         println!("No match for ps");
