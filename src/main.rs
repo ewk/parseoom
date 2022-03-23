@@ -11,7 +11,7 @@ const FREE_SWAP_RE: &str = r"Free swap\s+=.*";
 const UNRECLAIMABLE_SLAB_RE: &str = r"slab_unreclaimable:(\d+)";
 const HUGEPAGES_RE: &str = r"hugepages_total=(\d+)";
 const SHMEM_RE: &str = r"shmem:(\d+)";
-const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*)[oO]ut of memory:";
+const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*?)(?-s:.*?[oO]ut of memory:){1}?";
 const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
 const PS_LIST_RE: &str = r"(?s)(pid.+name)(.*)";
 const PS_LIST_HEADER: &str = r".*pid.+name";
