@@ -53,13 +53,13 @@ fn parse_meminfo(s: &str) {
 
     // Find huge page allocations at time of oom kill
     let re = Regex::new(HUGEPAGES_RE).unwrap();
+    let mut hugepages = 0;
 
-    if let Some(x) = re.captures(s) {
-        let hugepages = x.get(1).unwrap().as_str();
-        println!("Number of allocated huge pages: {}", hugepages)
-    } else {
-        println!("No match for hugepages");
+    for caps in re.captures_iter(s) {
+        hugepages += &caps[1].parse::<i64>().unwrap();
     }
+
+    println!("Number of allocated huge pages: {}", hugepages);
 
     // Find shared memory
     let re = Regex::new(SHMEM_RE).unwrap();
