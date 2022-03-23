@@ -13,8 +13,8 @@ const HUGEPAGES_RE: &str = r"hugepages_total=(\d+)";
 const SHMEM_RE: &str = r"shmem:(\d+)";
 const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*?)(?-s:.*?[oO]ut of memory:){1}?";
 const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
-const PS_LIST_RE: &str = r"(?s)(pid.+name)(.*)";
 const PS_LIST_HEADER: &str = r".*pid.+name";
+const PS_LIST_RE: &str = r"(?s)(pid.+\bname\b)(.*)";
 
 // Parse the meminfo section of the oom kill report and print the results
 fn parse_meminfo(s: &str) {
