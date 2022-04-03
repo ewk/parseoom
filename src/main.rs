@@ -6,18 +6,15 @@ use std::fs;
 use std::iter::FromIterator;
 use std::process;
 
-const TOTAL_RAM_RE: &str = r"(\d+) pages RAM";
-const FREE_SWAP_RE: &str = r"Free swap\s+=.*";
-const UNRECLAIMABLE_SLAB_RE: &str = r"slab_unreclaimable:(\d+)";
-const HUGEPAGES_RE: &str = r"hugepages_total=(\d+)";
-const SHMEM_RE: &str = r"shmem:(\d+)";
 const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*?)(?-s:.*?[oO]ut of memory:){1}?";
 const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
 const PS_LIST_HEADER: &str = r".*pid.+name";
 const PS_LIST_RE: &str = r"(?s)(pid.+\bname\b)(.*)";
 
 // Parse the meminfo section of the oom kill report and print the results
-fn parse_meminfo(s: &str) {
+fn parse_meminfo_total(s: &str) {
+    const TOTAL_RAM_RE: &str = r"(\d+) pages RAM";
+
     // Find total memory
     let re = Regex::new(TOTAL_RAM_RE).unwrap();
 
@@ -29,7 +26,10 @@ fn parse_meminfo(s: &str) {
     } else {
         println!("No match for total_ram");
     }
+}
 
+fn parse_meminfo_swap(s: &str) {
+    const FREE_SWAP_RE: &str = r"Free swap\s+=.*";
     // Find free swap at time of oom kill
     let re = Regex::new(FREE_SWAP_RE).unwrap();
 
@@ -39,6 +39,10 @@ fn parse_meminfo(s: &str) {
     } else {
         println!("No match for swap");
     }
+}
+
+fn parse_meminfo_slab(s: &str) {
+    const UNRECLAIMABLE_SLAB_RE: &str = r"slab_unreclaimable:(\d+)";
 
     // The first slab_unreclaimable entry in MemInfo contains the total for all zones, in pages
     let re = Regex::new(UNRECLAIMABLE_SLAB_RE).unwrap();
@@ -50,7 +54,10 @@ fn parse_meminfo(s: &str) {
     } else {
         println!("No match for slab");
     }
+}
 
+fn parse_meminfo_hugepages(s: &str) {
+    const HUGEPAGES_RE: &str = r"hugepages_total=(\d+)";
     // Find huge page allocations at time of oom kill
     let re = Regex::new(HUGEPAGES_RE).unwrap();
     let mut hugepages = 0;
@@ -60,7 +67,10 @@ fn parse_meminfo(s: &str) {
     }
 
     println!("Number of allocated huge pages: {}", hugepages);
+}
 
+fn parse_meminfo_shared(s: &str) {
+    const SHMEM_RE: &str = r"shmem:(\d+)";
     // Find shared memory
     let re = Regex::new(SHMEM_RE).unwrap();
 
@@ -122,7 +132,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         cleaned.push('\n');
     }
 
-    parse_meminfo(&cleaned);
+    parse_meminfo_total(&cleaned);
+    parse_meminfo_swap(&cleaned);
+    parse_meminfo_slab(&cleaned);
+    parse_meminfo_hugepages(&cleaned);
+    parse_meminfo_shared(&cleaned);
 
     // Capture the process header and find the position of the 'pid' column
     let re = Regex::new(PS_LIST_HEADER).unwrap();
