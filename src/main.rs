@@ -8,8 +8,7 @@ use std::process;
 
 const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*?)(?-s:.*?[oO]ut of memory:){1}?";
 const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
-const PS_LIST_HEADER: &str = r".*pid.+name";
-const PS_LIST_RE: &str = r"(?s)(pid.+\bname\b)(.*)";
+const PS_LIST_RE: &str = r"(.*pid.+\bname\b)(?s)(.*)";
 
 // Parse the meminfo section of the oom kill report and print the results
 fn parse_meminfo_total(s: &str) {
@@ -139,11 +138,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     parse_meminfo_shared(&cleaned);
 
     // Capture the process header and find the position of the 'pid' column
-    let re = Regex::new(PS_LIST_HEADER).unwrap();
+    let re = Regex::new(PS_LIST_RE).unwrap();
     let ps_header = re
         .captures(&cleaned)
         .unwrap()
-        .get(0)
+        .get(1)
         .unwrap()
         .as_str()
         .trim();
