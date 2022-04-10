@@ -241,49 +241,54 @@ mod tests {
     use super::*;
 
     #[test]
-    // Make sure we can match various log formats containing an oom kill
-    fn log_entry_pattern() {
-        let re = Regex::new(LOG_ENTRY_RE).unwrap();
+    fn report_total_ram() {
+        const TOTAL_RAM_RE: &str = r"(\d+) pages RAM";
+        let re = Regex::new(TOTAL_RAM_RE).unwrap();
+        let s = "Dec 20 03:17:52 localhost kernel: 75669.637758 524154 pages RAM";
+        assert!(re.is_match(s));
+    }
 
-        let t1 = "Oct 24 00:00:11 noplacelikehome kernel: [11686.040488]  [<c10e1c15>] dump_header.isra.7+0x85/0xc0";
-        let t2 = "June 25 23:09:46 localhost kernel: numactl invoked oom-killer: gfp_mask=0x2084d0, order=1, oom_score_adj=0";
-        let t3 =
-            "[ 5720.256923] [PID]     uid  tgid total_vm      rss cpu oom_adj oom_score_adj name";
-        let t4 = "Nov 11 19:47:17 localhost kernel: containerd invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=-999";
-        let t5 = "May 12 13:13:47 local-host kernel: sshd invoked oom-killer: gfp_mask=0x6200ca(GFP_HIGHUSER_MOVABLE), order=0, oom_score_adj=0";
-        let t6 = "Nov 11 15:20:04 home kernel: [ 2323]   999  2323   156297     1709      66      235             0 polkitd";
-        let t7 = "Jun  4 15:36:26 localhost kernel: JIT invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=0";
-        let t8 = "Apr  5 15:06:40 SHOUTYCAPS kernel: httpd invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=0";
+    #[test]
+    fn report_swap() {
+        const FREE_SWAP_RE: &str = r"Free swap\s+=.*";
+        let re = Regex::new(FREE_SWAP_RE).unwrap();
+        let s = "Dec 20 03:17:52 localhost kernel: 75669.636534 Free swap  = 0kB";
+        assert!(re.is_match(s));
+    }
 
-        assert_eq!(
-            re.replace_all(t1, ""),
-            "[<c10e1c15>] dump_header.isra.7+0x85/0xc0"
-        );
-        assert_eq!(
-            re.replace_all(t2, ""),
-            "numactl invoked oom-killer: gfp_mask=0x2084d0, order=1, oom_score_adj=0"
-        );
-        assert_eq!(
-            re.replace_all(t3, ""),
-            "[PID]     uid  tgid total_vm      rss cpu oom_adj oom_score_adj name"
-        );
-        assert_eq!(
-            re.replace_all(t4, ""),
-            "containerd invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=-999"
-        );
-        assert_eq!(re.replace_all(t5, ""),
-            "sshd invoked oom-killer: gfp_mask=0x6200ca(GFP_HIGHUSER_MOVABLE), order=0, oom_score_adj=0");
-        assert_eq!(
-            re.replace_all(t6, ""),
-            "[ 2323]   999  2323   156297     1709      66      235             0 polkitd"
-        );
-        assert_eq!(
-            re.replace_all(t7, ""),
-            "JIT invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=0"
-        );
-        assert_eq!(
-            re.replace_all(t8, ""),
-            "httpd invoked oom-killer: gfp_mask=0x201da, order=0, oom_score_adj=0"
-        );
+    #[test]
+    fn report_slab() {
+        const UNRECLAIMABLE_SLAB_RE: &str = r"slab_unreclaimable:(\d+)";
+        let re = Regex::new(UNRECLAIMABLE_SLAB_RE).unwrap();
+        let s = "Dec 20 03:17:52 localhost kernel: 75669.607722  slab_reclaimable:4158 slab_unreclaimable:4465";
+        assert!(re.is_match(s));
+    }
+
+    #[test]
+    fn report_hugepages() {
+        const HUGEPAGES_RE: &str = r"hugepages_total=(\d+)";
+        let re = Regex::new(HUGEPAGES_RE).unwrap();
+        let s = "Dec 20 03:17:52 localhost kernel: 75669.631773 Node 0 hugepages_total=512 hugepages_free=0 hugepages_surp=0 hugepages_size=1048576kB";
+        assert!(re.is_match(s));
+        let s = "Dec 20 03:17:52 localhost kernel: 75669.633105 Node 0 hugepages_total=512 hugepages_free=0 hugepages_surp=0 hugepages_size=2048kB";
+        assert!(re.is_match(s));
+    }
+
+    #[test]
+    fn report_shared() {
+        const SHMEM_RE: &str = r"shmem:(\d+)";
+        let re = Regex::new(SHMEM_RE).unwrap();
+        let s = "Dec 20 03:17:52 localhost kernel: 75669.607722  mapped:70 shmem:147 pagetables:2089 bounce:0";
+        assert!(re.is_match(s));
+    }
+
+    #[test]
+    fn report_ps_usage() {
+        const PS_LIST_RE: &str = r"(.*pid.+\bname\b)(?s)(.*)";
+        let re = Regex::new(PS_LIST_RE).unwrap();
+        let s = "Dec 20 03:17:52 localhost kernel: 75669.641206   pid     uid  tgid total_vm      rss pgtables_bytes swapents oom_score_adj name
+Dec 20 03:17:52 localhost kernel: 75669.642775     199     0   199    14838      226   102400       14          -250 systemd-journal
+Dec 20 03:17:52 localhost kernel: 75669.644513     255     0   255     5316      159    69632       37         -1000 systemd-udevd";
+        assert!(re.is_match(s));
     }
 }
