@@ -18,9 +18,9 @@ fn parse_meminfo_total(s: &str) {
 
     if let Some(x) = re.captures(s) {
         let total_ram = x.get(1).unwrap().as_str();
-        let total_ram_mib = (total_ram.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0;
+        let total_ram_gib = (total_ram.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0 / 1024.0;
         // physical memory installed will be more than MemTotal reported by /proc/meminfo
-        println!("Total RAM: {:.1} MiB ", total_ram_mib)
+        println!("Total RAM: {:.1} GiB ", total_ram_gib)
     } else {
         println!("No match for total_ram");
     }
@@ -47,8 +47,8 @@ fn parse_meminfo_slab(s: &str) {
 
     if let Some(x) = re.captures(s) {
         let slab = x.get(1).unwrap().as_str();
-        let slab_mib = (slab.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0;
-        println!("Unreclaimable slab: {:.1} MiB", slab_mib);
+        let slab_gib = (slab.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0 / 1024.0;
+        println!("Unreclaimable slab: {:.1} MiB", slab_gib);
     } else {
         println!("No match for slab");
     }
@@ -69,13 +69,14 @@ fn parse_meminfo_hugepages(s: &str) {
 
 fn parse_meminfo_shared(s: &str) {
     const SHMEM_RE: &str = r"shmem:(\d+)";
+
     // Find shared memory
     let re = Regex::new(SHMEM_RE).unwrap();
 
     if let Some(x) = re.captures(s) {
         let shmem = x.get(1).unwrap().as_str();
-        let shmem_mib = (shmem.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0;
-        println!("Shared memory: {:.1} MiB", shmem_mib)
+        let shmem_gib = (shmem.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0 / 1024.0;
+        println!("Shared memory: {:.1} GiB", shmem_gib)
     } else {
         println!("No match for shmem");
     }
@@ -132,7 +133,7 @@ fn report_ram_usage(cleaned: &str) {
         println!("\nTop 20 unique commands using memory:\n");
         for line in command_vec.iter().take(20) {
             let rss = *line.1 as f64;
-            println!("{}: {:.1} MiB", line.0, (rss * 4096.0) / 1024.0 / 1024.0);
+            println!("{}: {:.1} GiB", line.0, (rss * 4096.0) / 1024.0 / 1024.0 / 1024.0);
         }
 
         // Sort and display the ps list
