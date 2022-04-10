@@ -8,7 +8,6 @@ use std::process;
 
 const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*?)(?-s:.*?[oO]ut of memory:){1}?";
 const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
-const PS_LIST_RE: &str = r"(.*pid.+\bname\b)(?s)(.*)";
 
 // Parse the meminfo section of the oom kill report and print the results
 fn parse_meminfo_total(s: &str) {
@@ -82,60 +81,8 @@ fn parse_meminfo_shared(s: &str) {
     }
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let mut args = env::args();
-
-    if args.len() < 2 {
-        eprintln!("USAGE: parseoom [filename]");
-        process::exit(1);
-    }
-
-    args.next();
-
-    let filename = args.next().expect("Didn't get a filename");
-
-    // read from beginning of last oom kill to end of log
-    let input = fs::read_to_string(filename).expect("Could not read filename");
-    let i = input
-        .rfind("invoked oom-killer")
-        .ok_or("string 'invoked oom-killer' not found")?;
-    let contents = &input[i..];
-
-    // match from invocation of oom killer to end of process list, just before end of report
-    let oom_kill_re = Regex::new(OOM_KILL_RE).unwrap();
-    let mat = oom_kill_re
-        .captures(contents)
-        .ok_or("Could not match an oom kill message in this file")?;
-    let oom = mat
-        .get(0)
-        .expect("Match for 'invoked oom-killer' not found")
-        .as_str()
-        .lines(); // convert match to a str iterator
-
-    // Clean up the oom kill report for ease of parsing
-    let mut cleaned = String::new();
-    let oom_end = Regex::new(PS_LIST_END_RE).unwrap();
-
-    // Strip out end of report summary and PID column brackets
-    for line in oom {
-        // These patterns appear immediately after the end of the ps list.
-        // Do not include them in the new string so we know where to stop.
-        if oom_end.is_match(line) {
-            continue;
-        }
-
-        let s = line.replace("[", ""); // clean up PID entries
-        let s = s.replace("]", "");
-
-        cleaned.push_str(&s);
-        cleaned.push('\n');
-    }
-
-    parse_meminfo_total(&cleaned);
-    parse_meminfo_swap(&cleaned);
-    parse_meminfo_slab(&cleaned);
-    parse_meminfo_hugepages(&cleaned);
-    parse_meminfo_shared(&cleaned);
+fn report_ram_usage(cleaned: &str) {
+    const PS_LIST_RE: &str = r"(.*pid.+\bname\b)(?s)(.*)";
 
     // Capture the process header and find the position of the 'pid' column
     let re = Regex::new(PS_LIST_RE).unwrap();
@@ -227,6 +174,63 @@ fn main() -> Result<(), Box<dyn Error>> {
     } else {
         println!("No match for ps");
     }
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let mut args = env::args();
+
+    if args.len() < 2 {
+        eprintln!("USAGE: parseoom [filename]");
+        process::exit(1);
+    }
+
+    args.next();
+
+    let filename = args.next().expect("Didn't get a filename");
+
+    // read from beginning of last oom kill to end of log
+    let input = fs::read_to_string(filename).expect("Could not read filename");
+    let i = input
+        .rfind("invoked oom-killer")
+        .ok_or("string 'invoked oom-killer' not found")?;
+    let contents = &input[i..];
+
+    // match from invocation of oom killer to end of process list, just before end of report
+    let oom_kill_re = Regex::new(OOM_KILL_RE).unwrap();
+    let mat = oom_kill_re
+        .captures(contents)
+        .ok_or("Could not match an oom kill message in this file")?;
+    let oom = mat
+        .get(0)
+        .expect("Match for 'invoked oom-killer' not found")
+        .as_str()
+        .lines(); // convert match to a str iterator
+
+    // Clean up the oom kill report for ease of parsing
+    let mut cleaned = String::new();
+    let oom_end = Regex::new(PS_LIST_END_RE).unwrap();
+
+    // Strip out end of report summary and PID column brackets
+    for line in oom {
+        // These patterns appear immediately after the end of the ps list.
+        // Do not include them in the new string so we know where to stop.
+        if oom_end.is_match(line) {
+            continue;
+        }
+
+        let s = line.replace("[", ""); // clean up PID entries
+        let s = s.replace("]", "");
+
+        cleaned.push_str(&s);
+        cleaned.push('\n');
+    }
+
+    parse_meminfo_total(&cleaned);
+    parse_meminfo_swap(&cleaned);
+    parse_meminfo_slab(&cleaned);
+    parse_meminfo_hugepages(&cleaned);
+    parse_meminfo_shared(&cleaned);
+    report_ram_usage(&cleaned);
 
     Ok(())
 }
