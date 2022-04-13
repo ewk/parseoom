@@ -11,25 +11,24 @@ use std::process;
 const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*?)(?-s:.*?[oO]ut of memory:){1}?";
 const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
 
-// Parse the meminfo section of the oom kill report and print the results
-fn parse_meminfo_total(s: &str) {
+// Find total pages of RAM and return value in GiB
+fn parse_meminfo_total(s: &str) -> Option<f64> {
     const TOTAL_RAM_RE: &str = r"(\d+) pages RAM";
 
-    // Find total memory
     let re = Regex::new(TOTAL_RAM_RE).unwrap();
 
     if let Some(x) = re.captures(s) {
         let total_ram = x.get(1).unwrap().as_str();
         let total_ram_gib = (total_ram.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0 / 1024.0;
-        // physical memory installed will be more than MemTotal reported by /proc/meminfo
-        println!("Total RAM: {:.1} GiB ", total_ram_gib)
+        Some(total_ram_gib)
     } else {
-        println!("No match for total_ram");
+        None
     }
 }
 
 fn parse_meminfo_swap(s: &str) {
     const FREE_SWAP_RE: &str = r"Free swap\s+=.*";
+
     // Find free swap at time of oom kill
     let re = Regex::new(FREE_SWAP_RE).unwrap();
 
@@ -228,7 +227,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         cleaned.push('\n');
     }
 
-    parse_meminfo_total(&cleaned);
+    let total_ram_gib = parse_meminfo_total(&cleaned).expect("No match for total pages RAM");
+
+    println!("Total RAM: {:.1} GiB ", total_ram_gib);
     parse_meminfo_swap(&cleaned);
     parse_meminfo_slab(&cleaned);
     parse_meminfo_hugepages(&cleaned);
@@ -246,8 +247,9 @@ mod tests {
     fn report_total_ram() {
         const TOTAL_RAM_RE: &str = r"(\d+) pages RAM";
         let re = Regex::new(TOTAL_RAM_RE).unwrap();
-        let s = "Dec 20 03:17:52 localhost kernel: 75669.637758 524154 pages RAM";
+        let s = "Dec 20 03:17:52 localhost kernel: 75669.637758 5241544212132178 pages RAM";
         assert!(re.is_match(s));
+        assert_eq!(parse_meminfo_total(s), Some(19994904373.673164));
     }
 
     #[test]
