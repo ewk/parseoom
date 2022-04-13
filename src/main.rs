@@ -249,10 +249,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (m, g) = parse_meminfo_hugepages(&cleaned).expect("No match for huge pages.");
     let total_2_MiB_hugepages_MiB = m / 1024.0;
     let total_1_GiB_hugepages_GiB = g / 1024.0 / 1024.0;
+    let total_huge_page_allocation = (total_2_MiB_hugepages_MiB / 1024.0) + total_1_GiB_hugepages_GiB;
 
     println!("Total RAM: {:.1} GiB ", total_ram_gib);
     println!("Allocated 2 MiB huge pages: {:.1} MiB", total_2_MiB_hugepages_MiB);
     println!("Allocated 1 GiB huge pages: {:.1} GiB", total_1_GiB_hugepages_GiB);
+    println!("Allocated huge pages are using {:.1}% of total system memory.",
+        (total_huge_page_allocation / total_ram_gib) * 100.0);
+
     parse_meminfo_swap(&cleaned);
     parse_meminfo_slab(&cleaned);
     parse_meminfo_shared(&cleaned);
