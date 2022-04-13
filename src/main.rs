@@ -1,3 +1,5 @@
+#![allow(non_snake_case)] // for MiB, GiB
+
 use regex::Regex;
 use std::collections::BTreeMap;
 use std::env;
