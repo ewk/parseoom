@@ -55,17 +55,35 @@ fn parse_meminfo_slab(s: &str) {
     }
 }
 
-fn parse_meminfo_hugepages(s: &str) {
-    const HUGEPAGES_RE: &str = r"hugepages_total=(\d+)";
-    // Find huge page allocations at time of oom kill
-    let re = Regex::new(HUGEPAGES_RE).unwrap();
-    let mut hugepages = 0;
+// Find and return size of 2 MiB and 1 GiB huge page allocations in KiB
+// t.0 is the sum of 2 MB huge pages in KiB
+// t.1 is the sum of 1 GB huge pages in KiB
+fn parse_meminfo_hugepages(s: &str) -> Option<(f64, f64)> {
+    const HUGEPAGES_2MB_RE: &str = r"hugepages_total=(\d+).+?hugepages_size=2048kB";
+    const HUGEPAGES_1GB_RE: &str = r"hugepages_total=(\d+).+?hugepages_size=1048576kB";
+    let mut t = (0.0, 0.0);
+
+    let re = Regex::new(HUGEPAGES_2MB_RE).unwrap();
+    let mut num_2_mb_hugepages = 0.0;
 
     for caps in re.captures_iter(s) {
-        hugepages += &caps[1].parse::<i64>().unwrap();
+        num_2_mb_hugepages += &caps[1].parse::<f64>().unwrap();
     }
 
-    println!("Number of allocated huge pages: {}", hugepages);
+    // convert total 2 MiB huge page allocation from kb to kib
+    t.0 = num_2_mb_hugepages * (2048.0 / 1.024);
+
+    let re = Regex::new(HUGEPAGES_1GB_RE).unwrap();
+    let mut num_1_gb_hugepages = 0.0;
+
+    for caps in re.captures_iter(s) {
+        num_1_gb_hugepages += &caps[1].parse::<f64>().unwrap();
+    }
+
+    // convert total 1 GiB huge page allocation from kb to kib
+    t.1 = num_1_gb_hugepages * (1048576.0 / 1.024);
+
+    Some(t)
 }
 
 fn parse_meminfo_shared(s: &str) {
@@ -228,11 +246,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let total_ram_gib = parse_meminfo_total(&cleaned).expect("No match for total pages RAM");
+    let (m, g) = parse_meminfo_hugepages(&cleaned).expect("No match for huge pages.");
+    let total_2_MiB_hugepages_MiB = m / 1024.0;
+    let total_1_GiB_hugepages_GiB = g / 1024.0 / 1024.0;
 
     println!("Total RAM: {:.1} GiB ", total_ram_gib);
+    println!("Allocated 2 MiB huge pages: {:.1} MiB", total_2_MiB_hugepages_MiB);
+    println!("Allocated 1 GiB huge pages: {:.1} GiB", total_1_GiB_hugepages_GiB);
     parse_meminfo_swap(&cleaned);
     parse_meminfo_slab(&cleaned);
-    parse_meminfo_hugepages(&cleaned);
     parse_meminfo_shared(&cleaned);
     report_ram_usage(&cleaned);
 
@@ -270,6 +292,11 @@ mod tests {
 
     #[test]
     fn report_hugepages() {
+        let s = "Dec 20 03:17:52 localhost kernel: 75669.631773 Node 0 hugepages_total=2 hugepages_free=0 hugepages_surp=0 hugepages_size=1048576kB\n Dec 20 03:17:52 localhost kernel: 75669.633105 Node 0 hugepages_total=12 hugepages_free=0 hugepages_surp=0 hugepages_size=2048kB";
+        let (m, g) = parse_meminfo_hugepages(s).unwrap();
+        assert_eq!(m, 24000.0);
+        assert_eq!(g, 2048000.0);
+
         const HUGEPAGES_RE: &str = r"hugepages_total=(\d+)";
         let re = Regex::new(HUGEPAGES_RE).unwrap();
         let s = "Dec 20 03:17:52 localhost kernel: 75669.631773 Node 0 hugepages_total=512 hugepages_free=0 hugepages_surp=0 hugepages_size=1048576kB";
