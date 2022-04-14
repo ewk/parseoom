@@ -247,21 +247,21 @@ fn main() -> Result<(), Box<dyn Error>> {
         cleaned.push('\n');
     }
 
-    let total_ram_gib = parse_meminfo_total(&cleaned).expect("No match for total pages RAM");
+    let total_ram_GiB = parse_meminfo_total(&cleaned).expect("No match for total pages RAM.");
     let free_swap_GiB = parse_meminfo_swap(&cleaned).expect("No match for swap.");
     let (m, g) = parse_meminfo_hugepages(&cleaned).expect("No match for huge pages.");
     let total_2_MiB_hugepages_MiB = m / 1024.0;
     let total_1_GiB_hugepages_GiB = g / 1024.0 / 1024.0;
-    let total_huge_page_allocation = (total_2_MiB_hugepages_MiB / 1024.0) + total_1_GiB_hugepages_GiB;
+    let total_huge_pages_GiB = (total_2_MiB_hugepages_MiB / 1024.0) + total_1_GiB_hugepages_GiB;
     let unreclaimable_slab_GiB = parse_meminfo_slab(&cleaned).expect("No match for slab.");
     let shmem_GiB = parse_meminfo_shared(&cleaned).expect("No match for shmem");
 
-    println!("Total RAM: {:.1} GiB ", total_ram_gib);
+    println!("Total RAM: {:.1} GiB ", total_ram_GiB);
     println!("Free swap: {} KiB", free_swap_GiB);
     println!("Allocated 2 MiB huge pages: {:.1} MiB", total_2_MiB_hugepages_MiB);
     println!("Allocated 1 GiB huge pages: {:.1} GiB", total_1_GiB_hugepages_GiB);
     println!("Allocated huge pages are using {:.1}% of total system memory.",
-        (total_huge_page_allocation / total_ram_gib) * 100.0);
+        (total_huge_pages_GiB / total_ram_GiB) * 100.0);
     println!("Unreclaimable slab: {:.1} GiB", unreclaimable_slab_GiB);
     println!("Unreclaimable slab is {:.1}% of total system memory.",
         (unreclaimable_slab_GiB / total_ram_GiB) * 100.0);
