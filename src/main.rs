@@ -88,18 +88,18 @@ fn parse_meminfo_hugepages(s: &str) -> Option<(f64, f64)> {
     Some(t)
 }
 
-fn parse_meminfo_shared(s: &str) {
+// Report shared memory in GiB
+fn parse_meminfo_shared(s: &str)  -> Option<f64> {
     const SHMEM_RE: &str = r"shmem:(\d+)";
 
-    // Find shared memory
     let re = Regex::new(SHMEM_RE).unwrap();
 
     if let Some(x) = re.captures(s) {
         let shmem = x.get(1).unwrap().as_str();
         let shmem_gib = (shmem.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0 / 1024.0;
-        println!("Shared memory: {:.1} GiB", shmem_gib)
+        Some(shmem_gib)
     } else {
-        println!("No match for shmem");
+        None
     }
 }
 
@@ -254,6 +254,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let total_1_GiB_hugepages_GiB = g / 1024.0 / 1024.0;
     let total_huge_page_allocation = (total_2_MiB_hugepages_MiB / 1024.0) + total_1_GiB_hugepages_GiB;
     let unreclaimable_slab_GiB = parse_meminfo_slab(&cleaned).expect("No match for slab.");
+    let shmem_GiB = parse_meminfo_shared(&cleaned).expect("No match for shmem");
 
     println!("Total RAM: {:.1} GiB ", total_ram_gib);
     println!("Free swap: {} KiB", free_swap_GiB);
@@ -264,8 +265,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Unreclaimable slab: {:.1} GiB", unreclaimable_slab_GiB);
     println!("Unreclaimable slab is {:.1}% of total system memory.",
         (unreclaimable_slab_GiB / total_ram_GiB) * 100.0);
+    println!("Shared memory: {:.1} GiB", shmem_GiB);
 
-    parse_meminfo_shared(&cleaned);
     report_ram_usage(&cleaned);
 
     Ok(())
@@ -323,6 +324,7 @@ mod tests {
         let re = Regex::new(SHMEM_RE).unwrap();
         let s = "Dec 20 03:17:52 localhost kernel: 75669.607722  mapped:70 shmem:147 pagetables:2089 bounce:0";
         assert!(re.is_match(s));
+        assert_eq!(parse_meminfo_shared(s).unwrap(), 0.000560760498046875);
     }
 
     #[test]
