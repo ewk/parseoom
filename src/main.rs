@@ -154,13 +154,13 @@ fn report_ram_usage(cleaned: &str) {
         println!("\nTop 10 unique commands using memory:\n");
         for line in command_vec.iter().take(10) {
             let rss = *line.1 as f64;
-            println!("{}: {:.1} GiB", line.0, (rss * 4096.0) / 1024.0 / 1024.0 / 1024.0);
+            println!("    {}: {:.1} GiB", line.0, (rss * 4096.0) / 1024.0 / 1024.0 / 1024.0);
         }
 
         // Sort and display the ps list
         println!("\nProcesses using most memory:\n");
         println!(
-            "{:^7} {:>5} {:>5} {:>8} {:>8} {:<14} {:<8} {:<13} {:<4}",
+            "{:^7} {:>5} {:>6} {:>10} {:>8} {:>16} {:>10} {:>15}  {:<15}",
             header_vec[pid_col],
             header_vec[pid_col + 1],
             header_vec[pid_col + 2],
@@ -181,7 +181,7 @@ fn report_ram_usage(cleaned: &str) {
         // This has to run last so the iterator can consume the vector
         for line in v.into_iter().rev().take(10) {
             println!(
-                "{:>7} {:>5} {:>5} {:>8} {:>8} {:^14} {:>8} {:>13} {:<15}",
+                "{:>7} {:>5} {:>6} {:>10} {:>8} {:>16} {:>10} {:>15}  {:<15}",
                 line[pid_col],
                 line[pid_col + 1],
                 line[pid_col + 2],
