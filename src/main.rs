@@ -178,8 +178,8 @@ fn report_ram_usage(cleaned: &str) {
         });
 
         // Put the sorted string back together so we can display the results.
-        // FIXME this has to run last so the iterator can consume the vector
         for line in v.into_iter().rev().take(20) {
+        // This has to run last so the iterator can consume the vector
             println!(
                 "{:>7} {:>5} {:>5} {:>8} {:>8} {:^14} {:>8} {:>13} {:<15}",
                 line[pid_col],
