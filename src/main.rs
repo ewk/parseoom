@@ -240,8 +240,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             continue;
         }
 
-        let s = line.replace("[", ""); // clean up PID entries
-        let s = s.replace("]", "");
+        let s = line.replace('[', ""); // clean up PID entries
+        let s = s.replace(']', "");
 
         cleaned.push_str(&s);
         cleaned.push('\n');
