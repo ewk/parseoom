@@ -103,7 +103,7 @@ fn parse_meminfo_shared(s: &str)  -> Option<f64> {
     }
 }
 
-fn report_ram_usage(cleaned: &str) {
+fn report_ps_usage(cleaned: &str) {
     const PS_LIST_RE: &str = r"(.*pid.+\bname\b)(?s)(.*)";
 
     // Capture the process header and find the position of the 'pid' column
@@ -267,7 +267,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         (unreclaimable_slab_GiB / total_ram_GiB) * 100.0);
     println!("Shared memory: {:.1} GiB", shmem_GiB);
 
-    report_ram_usage(&cleaned);
+    report_ps_usage(&cleaned);
 
     Ok(())
 }
