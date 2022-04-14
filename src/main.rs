@@ -26,17 +26,18 @@ fn parse_meminfo_total(s: &str) -> Option<f64> {
     }
 }
 
-fn parse_meminfo_swap(s: &str) {
-    const FREE_SWAP_RE: &str = r"Free swap\s+=.*";
+// Report free swap in KiB
+fn parse_meminfo_swap(s: &str) -> Option<f64> {
+    const FREE_SWAP_RE: &str = r"Free swap\s+=\s+(\d+)";
 
-    // Find free swap at time of oom kill
     let re = Regex::new(FREE_SWAP_RE).unwrap();
 
     if let Some(x) = re.captures(s) {
-        let swap = x.get(0).unwrap().as_str();
-        println!("{}", swap)
+        let swap = x.get(1).unwrap().as_str().parse::<f64>().unwrap();
+        let swap = swap * (2048.0 / 1.024);
+        Some(swap)
     } else {
-        println!("No match for swap");
+        None
     }
 }
 
@@ -246,18 +247,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let total_ram_gib = parse_meminfo_total(&cleaned).expect("No match for total pages RAM");
+    let free_swap_GiB = parse_meminfo_swap(&cleaned).expect("No match for swap.");
     let (m, g) = parse_meminfo_hugepages(&cleaned).expect("No match for huge pages.");
     let total_2_MiB_hugepages_MiB = m / 1024.0;
     let total_1_GiB_hugepages_GiB = g / 1024.0 / 1024.0;
     let total_huge_page_allocation = (total_2_MiB_hugepages_MiB / 1024.0) + total_1_GiB_hugepages_GiB;
 
     println!("Total RAM: {:.1} GiB ", total_ram_gib);
+    println!("Free swap: {} KiB", free_swap_GiB);
     println!("Allocated 2 MiB huge pages: {:.1} MiB", total_2_MiB_hugepages_MiB);
     println!("Allocated 1 GiB huge pages: {:.1} GiB", total_1_GiB_hugepages_GiB);
     println!("Allocated huge pages are using {:.1}% of total system memory.",
         (total_huge_page_allocation / total_ram_gib) * 100.0);
 
-    parse_meminfo_swap(&cleaned);
     parse_meminfo_slab(&cleaned);
     parse_meminfo_shared(&cleaned);
     report_ram_usage(&cleaned);
@@ -284,6 +286,7 @@ mod tests {
         let re = Regex::new(FREE_SWAP_RE).unwrap();
         let s = "Dec 20 03:17:52 localhost kernel: 75669.636534 Free swap  = 0kB";
         assert!(re.is_match(s));
+        assert_eq!(parse_meminfo_swap(s).unwrap(), 0.0);
     }
 
     #[test]
