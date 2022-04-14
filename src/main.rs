@@ -41,7 +41,8 @@ fn parse_meminfo_swap(s: &str) -> Option<f64> {
     }
 }
 
-fn parse_meminfo_slab(s: &str) {
+// Report unreclaimable slab usage in GiB
+fn parse_meminfo_slab(s: &str) -> Option<f64> {
     const UNRECLAIMABLE_SLAB_RE: &str = r"slab_unreclaimable:(\d+)";
 
     // The first slab_unreclaimable entry in MemInfo contains the total for all zones, in pages
@@ -50,9 +51,9 @@ fn parse_meminfo_slab(s: &str) {
     if let Some(x) = re.captures(s) {
         let slab = x.get(1).unwrap().as_str();
         let slab_gib = (slab.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0 / 1024.0;
-        println!("Unreclaimable slab: {:.1} MiB", slab_gib);
+        Some(slab_gib)
     } else {
-        println!("No match for slab");
+        None
     }
 }
 
@@ -252,6 +253,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let total_2_MiB_hugepages_MiB = m / 1024.0;
     let total_1_GiB_hugepages_GiB = g / 1024.0 / 1024.0;
     let total_huge_page_allocation = (total_2_MiB_hugepages_MiB / 1024.0) + total_1_GiB_hugepages_GiB;
+    let unreclaimable_slab_GiB = parse_meminfo_slab(&cleaned).expect("No match for slab.");
 
     println!("Total RAM: {:.1} GiB ", total_ram_gib);
     println!("Free swap: {} KiB", free_swap_GiB);
@@ -259,8 +261,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Allocated 1 GiB huge pages: {:.1} GiB", total_1_GiB_hugepages_GiB);
     println!("Allocated huge pages are using {:.1}% of total system memory.",
         (total_huge_page_allocation / total_ram_gib) * 100.0);
+    println!("Unreclaimable slab: {:.1} GiB", unreclaimable_slab_GiB);
+    println!("Unreclaimable slab is {:.1}% of total system memory.",
+        (unreclaimable_slab_GiB / total_ram_GiB) * 100.0);
 
-    parse_meminfo_slab(&cleaned);
     parse_meminfo_shared(&cleaned);
     report_ram_usage(&cleaned);
 
@@ -293,8 +297,9 @@ mod tests {
     fn report_slab() {
         const UNRECLAIMABLE_SLAB_RE: &str = r"slab_unreclaimable:(\d+)";
         let re = Regex::new(UNRECLAIMABLE_SLAB_RE).unwrap();
-        let s = "Dec 20 03:17:52 localhost kernel: 75669.607722  slab_reclaimable:4158 slab_unreclaimable:4465";
+        let s = "Dec 20 03:17:52 localhost kernel: 75669.607722  slab_reclaimable:4158 slab_unreclaimable:12849311288";
         assert!(re.is_match(s));
+        assert_eq!(parse_meminfo_slab(s).unwrap(), 49016.23263549805);
     }
 
     #[test]
