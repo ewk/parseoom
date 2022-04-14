@@ -10,65 +10,56 @@ messages file included in this repository, 'parseoom' will generate the
 following output:
 
 % parseoom messages
-Total RAM: 2047.5 MiB
-Free swap  = 0kB
-Unreclaimable slab: 17.4 MiB
-Number of allocated huge pages: 512
-Shared memory: 0.6 MiB
 
-Top 20 unique commands using memory:
+Memory total:
+    Total RAM: 20.0 GiB
 
-clamd: 1649.7 MiB
-rspamd: 294.9 MiB
-mariadbd: 30.0 MiB
-fail2ban-server: 17.1 MiB
-redis-server: 6.1 MiB
-unattended-upgr: 5.8 MiB
-nginx: 3.3 MiB
-config: 1.5 MiB
-freshclam: 1.4 MiB
-znc: 1.1 MiB
-systemd-journal: 0.9 MiB
-rsyslogd: 0.8 MiB
-sshd: 0.8 MiB
-anvil: 0.7 MiB
-systemd-logind: 0.7 MiB
-pickup: 0.6 MiB
-systemd-timesyn: 0.6 MiB
-systemd-udevd: 0.6 MiB
-tlsmgr: 0.6 MiB
-dbus-daemon: 0.5 MiB
+Swap:
+    Free swap: 0 KiB
+
+Huge Pages:
+    Allocated 2 MiB huge pages:      23.4 MiB  --  (0.1%)
+    Allocated 1 GiB huge pages:       2.0 GiB  --  (9.8%)
+
+Slab:
+    Unreclaimable slab: 0.0 GiB  --  (0.1%)
+
+Shared Memory:
+    Shared memory: 0.0 GiB  --  (0.0%)
+
+Top 10 unique commands using memory:
+
+    clamd: 1.6 GiB
+    rspamd: 0.3 GiB
+    mariadbd: 0.0 GiB
+    fail2ban-server: 0.0 GiB
+    redis-server: 0.0 GiB
+    unattended-upgr: 0.0 GiB
+    nginx: 0.0 GiB
+    config: 0.0 GiB
+    freshclam: 0.0 GiB
+    znc: 0.0 GiB
 
 Processes using most memory:
 
-pid     uid  tgid total_vm      rss pgtables_bytes swapents oom_score_adj name
-517     111     517     590364  422324  4395008 107099  0       clamd
-1682    108     1682    67131   16509   421888  7811    0       rspamd
-1680    108     1680    65038   14927   380928  8231    0       rspamd
-584     108     584     64811   14737   393216  8513    0       rspamd
-1677    108     1677    64811   14698   376832  8305    0       rspamd
-1683    108     1683    64811   14614   376832  8614    0       rspamd
-669     106     669     269508  7688    323584  12110   0       mariadbd
-590     0       590     177664  4383    208896  343     0       fail2ban-server
-581     112     581     16276   1567    110592  197     0       redis-server
-587     0       587     27165   1488    110592  635     0       unattended-upgr
-609     33      609     17517   519     110592  88      0       nginx
-598     0       598     1891    378     53248   12      0       config
-573     111     573     33216   368     114688  326     0       freshclam
-607     0       607     17458   333     102400  114     0       nginx
-589     998     589     32026   291     118784  14      0       znc
-199     0       199     14838   226     102400  14      -250    systemd-journal
-497     0       497     55185   209     77824   33      0       rsyslogd
-594     0       594     3323    207     69632   32      -1000   sshd
-505     0       505     3438    188     69632   18      0       systemd-logind
-7180    107     7180    10061   164     73728   0       0       pickup
+  pid     uid   tgid   total_vm      rss   pgtables_bytes   swapents   oom_score_adj  name
+    517   111    517     590364   422324          4395008     107099               0  clamd
+   1682   108   1682      67131    16509           421888       7811               0  rspamd
+   1680   108   1680      65038    14927           380928       8231               0  rspamd
+    584   108    584      64811    14737           393216       8513               0  rspamd
+   1677   108   1677      64811    14698           376832       8305               0  rspamd
+   1683   108   1683      64811    14614           376832       8614               0  rspamd
+    669   106    669     269508     7688           323584      12110               0  mariadbd
+    590     0    590     177664     4383           208896        343               0  fail2ban-server
+    581   112    581      16276     1567           110592        197               0  redis-server
+    587     0    587      27165     1488           110592        635               0  unattended-upgr
 
 
 I wrote this program to improve my understanding of Rust by implementing a
 non-trivial utility in the language. I make no claims regarding its fitness of
 purpose. (There are certainly better language choices for processing text.)
 
-This program is capable of cleaning up and parsing most log noise, but
+This program is capable of cleaning up or ignoring most log noise, but
 edge cases may still be lurking out there in the real world. This utility is not
 robust enough to handle corrupted logs (which are not unusual in the presence of
 memory pressure), unexpected linebreaks, or Murphy's law.
