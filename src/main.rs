@@ -151,8 +151,8 @@ fn report_ram_usage(cleaned: &str) {
         let mut command_vec = Vec::from_iter(commands.iter());
         command_vec.sort_by(|a, b| a.1.cmp(b.1).reverse());
 
-        println!("\nTop 20 unique commands using memory:\n");
-        for line in command_vec.iter().take(20) {
+        println!("\nTop 10 unique commands using memory:\n");
+        for line in command_vec.iter().take(10) {
             let rss = *line.1 as f64;
             println!("{}: {:.1} GiB", line.0, (rss * 4096.0) / 1024.0 / 1024.0 / 1024.0);
         }
@@ -178,8 +178,8 @@ fn report_ram_usage(cleaned: &str) {
         });
 
         // Put the sorted string back together so we can display the results.
-        for line in v.into_iter().rev().take(20) {
         // This has to run last so the iterator can consume the vector
+        for line in v.into_iter().rev().take(10) {
             println!(
                 "{:>7} {:>5} {:>5} {:>8} {:>8} {:^14} {:>8} {:>13} {:<15}",
                 line[pid_col],
