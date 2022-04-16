@@ -160,7 +160,7 @@ fn report_ps_usage(cleaned: &str) {
         // Sort and display the ps list
         println!("\nProcesses using most memory:\n");
         println!(
-            "{:^7} {:>5} {:>6} {:>10} {:>8} {:>16} {:>10} {:>15}  {:<15}",
+            "{:^7}  {:>5}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}",
             header_vec[pid_col],
             header_vec[pid_col + 1],
             header_vec[pid_col + 2],
