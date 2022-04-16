@@ -181,7 +181,7 @@ fn report_ps_usage(cleaned: &str) {
         // This has to run last so the iterator can consume the vector
         for line in v.into_iter().rev().take(10) {
             println!(
-                "{:>7} {:>5} {:>6} {:>10} {:>8} {:>16} {:>10} {:>15}  {:<15}",
+                "{:>7}  {:>5}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  {:.1} MiB",
                 line[pid_col],
                 line[pid_col + 1],
                 line[pid_col + 2],
@@ -190,7 +190,8 @@ fn report_ps_usage(cleaned: &str) {
                 line[pid_col + 5],
                 line[pid_col + 6],
                 line[pid_col + 7],
-                line[pid_col + 8]
+                line[pid_col + 8],
+                (line[pid_col + 4].parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0
             );
         }
     } else {
