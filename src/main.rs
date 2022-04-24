@@ -13,17 +13,32 @@ const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
 
 // Find total pages of RAM and return value in GiB
 fn parse_meminfo_total(s: &str) -> Option<f64> {
-    const TOTAL_RAM_RE: &str = r"(\d+) pages RAM";
+    const PAGES_RAM_RE: &str = r"(\d+) pages RAM";
+    const PAGES_RESERVED_RE: &str = r"(\d+) pages reserved";
 
-    let re = Regex::new(TOTAL_RAM_RE).unwrap();
+    let re = Regex::new(PAGES_RAM_RE).unwrap();
+    let pages_ram = re
+        .captures(s)
+        .unwrap()
+        .get(1)
+        .unwrap()
+        .as_str()
+        .parse::<f64>()
+        .unwrap();
 
-    if let Some(x) = re.captures(s) {
-        let total_ram = x.get(1).unwrap().as_str();
-        let total_ram_gib = (total_ram.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0 / 1024.0;
-        Some(total_ram_gib)
-    } else {
-        None
-    }
+    let re = Regex::new(PAGES_RESERVED_RE).unwrap();
+    let pages_reserved = re
+        .captures(s)
+        .unwrap()
+        .get(1)
+        .unwrap()
+        .as_str()
+        .parse::<f64>()
+        .unwrap();
+
+    let total_ram_gib = ((pages_ram - pages_reserved) * 4096.0) / 1024.0 / 1024.0 / 1024.0;
+
+    Some(total_ram_gib)
 }
 
 // Report free swap in KiB
@@ -291,9 +306,9 @@ mod tests {
     fn report_total_ram() {
         const TOTAL_RAM_RE: &str = r"(\d+) pages RAM";
         let re = Regex::new(TOTAL_RAM_RE).unwrap();
-        let s = "Dec 20 03:17:52 localhost kernel: 75669.637758 5241544212132178 pages RAM";
+        let s = "Dec 20 03:17:52 localhost kernel: 75669.637758 5241544212132178 pages RAM\n Dec 20 03:17:52 localhost kernel: 75669.637798 132311 pages reserved";
         assert!(re.is_match(s));
-        assert_eq!(parse_meminfo_total(s), Some(19994904373.673164));
+        assert_eq!(parse_meminfo_total(s), Some(19994904373.168438));
     }
 
     #[test]
