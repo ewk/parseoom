@@ -11,7 +11,7 @@ use std::process;
 const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*?)(?-s:.*?[oO]ut of memory:){1}?";
 const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
 
-// Find total pages of RAM and return value in GiB
+// Find total pages of RAM and return value in KiB
 fn parse_meminfo_total(s: &str) -> Option<f64> {
     const PAGES_RAM_RE: &str = r"(\d+) pages RAM";
     const PAGES_RESERVED_RE: &str = r"(\d+) pages reserved";
@@ -36,9 +36,10 @@ fn parse_meminfo_total(s: &str) -> Option<f64> {
         .parse::<f64>()
         .unwrap();
 
-    let total_ram_gib = ((pages_ram - pages_reserved) * 4096.0) / 1024.0 / 1024.0 / 1024.0;
+    // subtract reserved pages from the RAM total, which may not agree with what other tools report
+    let total_ram_kib = ((pages_ram - pages_reserved) * 4096.0) / 1024.0;
 
-    Some(total_ram_gib)
+    Some(total_ram_kib)
 }
 
 // Report free swap in KiB
@@ -56,7 +57,7 @@ fn parse_meminfo_swap(s: &str) -> Option<f64> {
     }
 }
 
-// Report unreclaimable slab usage in GiB
+// Report unreclaimable slab usage in KiB
 fn parse_meminfo_slab(s: &str) -> Option<f64> {
     const UNRECLAIMABLE_SLAB_RE: &str = r"slab_unreclaimable:(\d+)";
 
@@ -65,8 +66,8 @@ fn parse_meminfo_slab(s: &str) -> Option<f64> {
 
     if let Some(x) = re.captures(s) {
         let slab = x.get(1).unwrap().as_str();
-        let slab_gib = (slab.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0 / 1024.0;
-        Some(slab_gib)
+        let slab_kib = (slab.parse::<f64>().unwrap() * 4096.0) / 1024.0;
+        Some(slab_kib)
     } else {
         None
     }
@@ -103,7 +104,7 @@ fn parse_meminfo_hugepages(s: &str) -> Option<(f64, f64)> {
     Some(t)
 }
 
-// Report shared memory in GiB
+// Report shared memory in KiB
 fn parse_meminfo_shared(s: &str)  -> Option<f64> {
     const SHMEM_RE: &str = r"shmem:(\d+)";
 
@@ -111,8 +112,8 @@ fn parse_meminfo_shared(s: &str)  -> Option<f64> {
 
     if let Some(x) = re.captures(s) {
         let shmem = x.get(1).unwrap().as_str();
-        let shmem_gib = (shmem.parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0 / 1024.0;
-        Some(shmem_gib)
+        let shmem_kib = (shmem.parse::<f64>().unwrap() * 4096.0) / 1024.0;
+        Some(shmem_kib)
     } else {
         None
     }
@@ -263,33 +264,33 @@ fn main() -> Result<(), Box<dyn Error>> {
         cleaned.push('\n');
     }
 
-    let total_ram_GiB = parse_meminfo_total(&cleaned).expect("No match for total pages RAM.");
-    let free_swap_GiB = parse_meminfo_swap(&cleaned).expect("No match for swap.");
+    let total_ram_KiB = parse_meminfo_total(&cleaned).expect("No match for total pages RAM.");
+    let free_swap_KiB = parse_meminfo_swap(&cleaned).expect("No match for swap.");
     let (m, g) = parse_meminfo_hugepages(&cleaned).expect("No match for huge pages.");
     let total_2_MiB_hugepages_MiB = m / 1024.0;
     let total_1_GiB_hugepages_GiB = g / 1024.0 / 1024.0;
-    let unreclaimable_slab_GiB = parse_meminfo_slab(&cleaned).expect("No match for slab.");
-    let shmem_GiB = parse_meminfo_shared(&cleaned).expect("No match for shmem");
+    let unreclaimable_slab_KiB = parse_meminfo_slab(&cleaned).expect("No match for slab.");
+    let shmem_KiB = parse_meminfo_shared(&cleaned).expect("No match for shmem");
 
     println!("\nMemory total:");
-    println!("    Total RAM: {:.1} GiB ", total_ram_GiB);
+    println!("    Total RAM: {:.1} GiB ", total_ram_KiB / 1024.0 / 1024.0);
 
     println!("\nSwap:");
-    println!("    Free swap: {} KiB", free_swap_GiB);
+    println!("    Free swap: {} KiB", free_swap_KiB);
 
     println!("\nHuge Pages:");
-    println!("    Allocated 2 MiB huge pages: {:9.1} MiB  --  ({:.1}%)", total_2_MiB_hugepages_MiB,
-            ((total_2_MiB_hugepages_MiB / 1024.0) / total_ram_GiB) * 100.0 );
-    println!("    Allocated 1 GiB huge pages: {:9.1} GiB  --  ({:.1}%)", total_1_GiB_hugepages_GiB,
-         (total_1_GiB_hugepages_GiB / total_ram_GiB) * 100.0);
+    println!("    Allocated 2 MiB huge pages: {:9.1} GiB  --  ({:.1}%)",
+            total_2_MiB_hugepages_MiB / 1024.0, (m / total_ram_KiB) * 100.0);
+    println!("    Allocated 1 GiB huge pages: {:9.1} GiB  --  ({:.1}%)",
+            total_1_GiB_hugepages_GiB, (g / total_ram_KiB) * 100.0);
 
     println!("\nSlab:");
-    println!("    Unreclaimable slab: {:.1} GiB  --  ({:.1}%)",
-        unreclaimable_slab_GiB, (unreclaimable_slab_GiB / total_ram_GiB) * 100.0);
+    println!("    Unreclaimable slab: {:.1} MiB  --  ({:.1}%)",
+            unreclaimable_slab_KiB / 1024.0, (unreclaimable_slab_KiB / total_ram_KiB) * 100.0);
 
     println!("\nShared Memory:");
-    println!("    Shared memory: {:.1} GiB  --  ({:.1}%)", shmem_GiB,
-        (shmem_GiB / total_ram_GiB) * 100.0);
+    println!("    Shared memory: {:.1} MiB  --  ({:.1}%)", shmem_KiB / 1024.0,
+            (shmem_KiB / total_ram_KiB) * 100.0);
 
     report_ps_usage(&cleaned);
 
@@ -308,7 +309,7 @@ mod tests {
         let re = Regex::new(TOTAL_RAM_RE).unwrap();
         let s = "Dec 20 03:17:52 localhost kernel: 75669.637758 5241544212132178 pages RAM\n Dec 20 03:17:52 localhost kernel: 75669.637798 132311 pages reserved";
         assert!(re.is_match(s));
-        assert_eq!(parse_meminfo_total(s), Some(19994904373.168438));
+        assert_eq!(parse_meminfo_total(s), Some(2.0966176847999468e+16));
     }
 
     #[test]
@@ -326,7 +327,7 @@ mod tests {
         let re = Regex::new(UNRECLAIMABLE_SLAB_RE).unwrap();
         let s = "Dec 20 03:17:52 localhost kernel: 75669.607722  slab_reclaimable:4158 slab_unreclaimable:12849311288";
         assert!(re.is_match(s));
-        assert_eq!(parse_meminfo_slab(s).unwrap(), 49016.23263549805);
+        assert_eq!(parse_meminfo_slab(s).unwrap(), 51397245152.0);
     }
 
     #[test]
@@ -350,7 +351,7 @@ mod tests {
         let re = Regex::new(SHMEM_RE).unwrap();
         let s = "Dec 20 03:17:52 localhost kernel: 75669.607722  mapped:70 shmem:147 pagetables:2089 bounce:0";
         assert!(re.is_match(s));
-        assert_eq!(parse_meminfo_shared(s).unwrap(), 0.000560760498046875);
+        assert_eq!(parse_meminfo_shared(s).unwrap(), 588.0);
     }
 
     #[test]
