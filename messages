@@ -43,14 +43,14 @@ Dec 20 03:17:52 localhost kernel: [75669.621683] Node 0 DMA32 free:44672kB min:4
 Dec 20 03:17:52 localhost kernel: [75669.626325] lowmem_reserve[]: 0 0 0 0 0
 Dec 20 03:17:52 localhost kernel: [75669.626931] Node 0 DMA: 1*4kB (U) 3*8kB (UME) 2*16kB (E) 3*32kB (ME) 2*64kB (U) 3*128kB (UME) 5*256kB (UME) 4*5 12kB (ME) 2*1024kB (UE) 1*2048kB (E) 0*4096kB = 8092kB
 Dec 20 03:17:52 localhost kernel: [75669.629228] Node 0 DMA32: 206*4kB (UME) 305*8kB (UE) 322*16kB (UME) 168*32kB (UME) 93*64kB (UME) 35*128kB (UME) 6*256kB (UME) 5*512kB (UME) 0*1024kB 0*2048kB 4*4096kB (M) = 44704kB
-Dec 20 03:17:52 localhost kernel: [75669.631773] Node 0 hugepages_total=512 hugepages_free=0 hugepages_surp=0 hugepages_size=1048576kB
-Dec 20 03:17:52 localhost kernel: [75669.633105] Node 0 hugepages_total=512 hugepages_free=0 hugepages_surp=0 hugepages_size=2048kB
+Dec 20 03:17:52 localhost kernel: [75669.631773] Node 0 hugepages_total=2 hugepages_free=0 hugepages_surp=0 hugepages_size=1048576kB
+Dec 20 03:17:52 localhost kernel: [75669.633105] Node 0 hugepages_total=12 hugepages_free=0 hugepages_surp=0 hugepages_size=2048kB
 Dec 20 03:17:52 localhost kernel: [75669.634382] 15881 total pagecache pages
 Dec 20 03:17:52 localhost kernel: [75669.634966] 15642 pages in swap cache
 Dec 20 03:17:52 localhost kernel: [75669.635532] Swap cache stats: add 131944, delete 116302, find 3920/4316
 Dec 20 03:17:52 localhost kernel: [75669.636534] Free swap  = 0kB
 Dec 20 03:17:52 localhost kernel: [75669.637103] Total swap = 524284kB
-Dec 20 03:17:52 localhost kernel: [75669.637758] 524154 pages RAM
+Dec 20 03:17:52 localhost kernel: [75669.637758] 5241540 pages RAM
 Dec 20 03:17:52 localhost kernel: [75669.638377] 0 pages HighMem/MovableOnly
 Dec 20 03:17:52 localhost kernel: [75669.639169] 16538 pages reserved
 Dec 20 03:17:52 localhost kernel: [75669.639770] 0 pages hwpoisoned
