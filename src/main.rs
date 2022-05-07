@@ -105,7 +105,7 @@ fn parse_meminfo_hugepages(s: &str) -> Option<(f64, f64)> {
 }
 
 // Report shared memory in KiB
-fn parse_meminfo_shared(s: &str)  -> Option<f64> {
+fn parse_meminfo_shared(s: &str) -> Option<f64> {
     const SHMEM_RE: &str = r"shmem:(\d+)";
 
     let re = Regex::new(SHMEM_RE).unwrap();
@@ -125,7 +125,7 @@ fn report_ps_usage(cleaned: &str) {
     // Capture the process header and find the position of the 'pid' column
     let re = Regex::new(PS_LIST_RE).unwrap();
     let ps_header = re
-        .captures(&cleaned)
+        .captures(cleaned)
         .unwrap()
         .get(1)
         .unwrap()
@@ -141,7 +141,7 @@ fn report_ps_usage(cleaned: &str) {
     let re = Regex::new(PS_LIST_RE).unwrap();
 
     // Sort processes by memory used and report the commands using the most memory
-    if let Some(x) = re.captures(&cleaned) {
+    if let Some(x) = re.captures(cleaned) {
         let ps = x.get(2).unwrap().as_str().trim();
 
         // Convert the process list into a matrix of strings
@@ -279,18 +279,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("    Free swap: {} KiB", free_swap_KiB);
 
     println!("\nHuge Pages:");
-    println!("    Allocated 2 MiB huge pages: {:9.1} GiB  --  ({:.1}%)",
-            total_2_MiB_hugepages_MiB / 1024.0, (m / total_ram_KiB) * 100.0);
-    println!("    Allocated 1 GiB huge pages: {:9.1} GiB  --  ({:.1}%)",
-            total_1_GiB_hugepages_GiB, (g / total_ram_KiB) * 100.0);
+    println!(
+        "    Allocated 2 MiB huge pages: {:9.1} GiB  --  ({:.1}%)",
+        total_2_MiB_hugepages_MiB / 1024.0,
+        (m / total_ram_KiB) * 100.0
+    );
+    println!(
+        "    Allocated 1 GiB huge pages: {:9.1} GiB  --  ({:.1}%)",
+        total_1_GiB_hugepages_GiB,
+        (g / total_ram_KiB) * 100.0
+    );
 
     println!("\nSlab:");
-    println!("    Unreclaimable slab: {:.1} MiB  --  ({:.1}%)",
-            unreclaimable_slab_KiB / 1024.0, (unreclaimable_slab_KiB / total_ram_KiB) * 100.0);
+    println!(
+        "    Unreclaimable slab: {:.1} MiB  --  ({:.1}%)",
+        unreclaimable_slab_KiB / 1024.0,
+        (unreclaimable_slab_KiB / total_ram_KiB) * 100.0
+    );
 
     println!("\nShared Memory:");
-    println!("    Shared memory: {:.1} MiB  --  ({:.1}%)", shmem_KiB / 1024.0,
-            (shmem_KiB / total_ram_KiB) * 100.0);
+    println!(
+        "    Shared memory: {:.1} MiB  --  ({:.1}%)",
+        shmem_KiB / 1024.0,
+        (shmem_KiB / total_ram_KiB) * 100.0
+    );
 
     report_ps_usage(&cleaned);
 
