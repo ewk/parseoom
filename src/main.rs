@@ -180,16 +180,16 @@ fn report_ps_usage(cleaned: &str) {
         // Sort and display the ps list
         println!("\nProcesses using most memory:\n");
         println!(
-            header_vec[pid_col],
-            header_vec[pid_col + 1],
             "{:^7}  {:>5}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  MiB",
+            header_vec[pid_col],     // pid
+            header_vec[pid_col + 1], // uid
             header_vec[pid_col + 2],
             header_vec[pid_col + 3],
-            header_vec[pid_col + 4],
+            header_vec[pid_col + 4], // rss
             header_vec[pid_col + 5],
             header_vec[pid_col + 6],
             header_vec[pid_col + 7],
-            header_vec[pid_col + 8]
+            header_vec[pid_col + 8] // name
         );
 
         // We need to convert RSS from a string to an integer in order to sort correctly.
@@ -201,16 +201,16 @@ fn report_ps_usage(cleaned: &str) {
         // This has to run last so the iterator can consume the vector
         for line in v.into_iter().rev().take(10) {
             println!(
-                line[pid_col],
-                line[pid_col + 1],
                 "{:>7}  {:>5}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  {:.1}",
+                line[pid_col],     // pid
+                line[pid_col + 1], // uid
                 line[pid_col + 2],
                 line[pid_col + 3],
-                line[pid_col + 4],
+                line[pid_col + 4], // rss
                 line[pid_col + 5],
                 line[pid_col + 6],
                 line[pid_col + 7],
-                line[pid_col + 8],
+                line[pid_col + 8], // name
                 (line[pid_col + 4].parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0  // size MiB
             );
         }
