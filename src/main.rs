@@ -170,7 +170,11 @@ fn report_ps_usage(cleaned: &str) {
         println!("\nTop 10 unique commands using memory:\n");
         for line in command_vec.iter().take(10) {
             let rss = *line.1 as f64;
-            println!("    {:15} {:.1} MiB", line.0, (rss * 4096.0) / 1024.0 / 1024.0);
+            println!(
+                "    {:15}    {:8.1} MiB",
+                line.0,
+                (rss * 4096.0) / 1024.0 / 1024.0
+            );
         }
 
         // Sort and display the ps list
