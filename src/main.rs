@@ -144,8 +144,20 @@ fn report_ps_usage(cleaned: &str) {
     if let Some(x) = re.captures(cleaned) {
         let ps = x.get(2).unwrap().as_str().trim();
 
-        // Convert the process list into a matrix of strings
-        let mut v = ps
+        // Convert the process list into a matrix of strings.
+        // We're starting with the raw list, including log entry noise.
+        //
+        //      "Dec 20 03:17:52 localhost kernel: 75669.642775     199     0   199    14838 \n
+        //          226   102400       14          -250 systemd-journal"
+        //
+        // First split each line at whitespace into a matrix of strings:
+        //
+        //      [
+        //        ["Dec", "20", "03:17:52", "localhost", "kernel:", "75669.642775", "199", "0",
+        //          "199", "14838", "226", "102400", "14", "-250", "systemd-journal"],
+        //        ...
+        //      ]
+        let mut ps_matrix = ps
             .lines()
             .map(|s| {
                 s.trim()
@@ -155,18 +167,26 @@ fn report_ps_usage(cleaned: &str) {
             })
             .collect::<Vec<_>>();
 
-        // First identify unique commands using the most memory
-        // Create a map with a running total of RSS in use by unique commands
+        // Identify the unique commands using the most memory.
+        // Iterate over each line in the matrix to create a map
+        // of unique commands with their total RSS usage:
+        //
+        //      {"agetty": 59, "anvil": 189, ...}
         let mut commands: BTreeMap<&str, i64> = BTreeMap::new();
-        for line in v.iter() {
+        for line in ps_matrix.iter() {
             *commands.entry(&line[pid_col + 8]).or_insert(0) +=
                 line[pid_col + 4].parse::<i64>().unwrap();
         }
 
-        // convert the map back to a vector for sorting
+        // To sort the key (command name) by its value (RSS) we need to convert
+        // the map to a vector:
+        //
+        //      [("clamd", 422324), ("rspamd", 75485), ...]
         let mut command_vec = Vec::from_iter(commands.iter());
         command_vec.sort_by(|a, b| a.1.cmp(b.1).reverse());
 
+        // Now we have a list of process names sorted by RSS usage we can
+        // print the top consumers by name.
         println!("\nTop 10 unique commands using memory:\n");
         for line in command_vec.iter().take(10) {
             let rss = *line.1 as f64;
@@ -177,7 +197,13 @@ fn report_ps_usage(cleaned: &str) {
             );
         }
 
-        // Sort and display the ps list
+        // Sort and display the process list.
+        // The format may change depending on kernel version, but the number of columns and the
+        // position of pid, rss, and name should remain fixed, ie:
+        //
+        //      [  pid  ]   uid  tgid total_vm      rss pgtables_bytes swapents oom_score_adj name
+        //
+        // Print the header matched from the regex header_vec first.
         println!("\nProcesses using most memory:\n");
         println!(
             "{:^7}  {:>5}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  MiB",
@@ -192,14 +218,15 @@ fn report_ps_usage(cleaned: &str) {
             header_vec[pid_col + 8] // name
         );
 
-        // We need to convert RSS from a string to an integer in order to sort correctly.
-        v.sort_by(|a, b| {
+        // Sort and display the entire process list from the matrix we started with.
+        // The RSS field must be converted from a string to an integer in order to sort.
+        ps_matrix.sort_by(|a, b| {
             (a[pid_col + 4].parse::<i64>().unwrap()).cmp(&b[pid_col + 4].parse::<i64>().unwrap())
         });
 
-        // Put the sorted string back together so we can display the results.
-        // This has to run last so the iterator can consume the vector
-        for line in v.into_iter().rev().take(10) {
+        // Iterate over the sorted process matrix and display the top results.
+        // This has to run last so the iterator can consume ps_matrix.
+        for line in ps_matrix.into_iter().rev().take(10) {
             println!(
                 "{:>7}  {:>5}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  {:.1}",
                 line[pid_col],     // pid
