@@ -206,7 +206,7 @@ fn report_ps_usage(cleaned: &str) {
         // Print the header matched from the regex header_vec first.
         println!("\nProcesses using most memory:\n");
         println!(
-            "{:^7}  {:>5}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  MiB",
+            "{:^7}  {:>5}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  {:>8}",
             header_vec[pid_col],     // pid
             header_vec[pid_col + 1], // uid
             header_vec[pid_col + 2],
@@ -215,7 +215,8 @@ fn report_ps_usage(cleaned: &str) {
             header_vec[pid_col + 5],
             header_vec[pid_col + 6],
             header_vec[pid_col + 7],
-            header_vec[pid_col + 8] // name
+            header_vec[pid_col + 8], // name
+            "MiB"
         );
 
         // Sort and display the entire process list from the matrix we started with.
@@ -228,7 +229,7 @@ fn report_ps_usage(cleaned: &str) {
         // This has to run last so the iterator can consume ps_matrix.
         for line in ps_matrix.into_iter().rev().take(10) {
             println!(
-                "{:>7}  {:>5}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  {:.1}",
+                "{:>7}  {:>5}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  {:>8.1}",
                 line[pid_col],     // pid
                 line[pid_col + 1], // uid
                 line[pid_col + 2],
