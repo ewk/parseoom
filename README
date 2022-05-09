@@ -12,57 +12,56 @@ following output:
 % parseoom messages
 
 Memory total:
-    Total RAM: 20.0 GiB
+    Total RAM: 19.9 GiB
 
 Swap:
     Free swap: 0 KiB
 
 Huge Pages:
-    Allocated 2 MiB huge pages:      23.4 MiB  --  (0.1%)
+    Allocated 2 MiB huge pages:       0.0 GiB  --  (0.1%)
     Allocated 1 GiB huge pages:       2.0 GiB  --  (9.8%)
 
 Slab:
-    Unreclaimable slab: 0.0 GiB  --  (0.1%)
+    Unreclaimable slab: 17.4 MiB  --  (0.1%)
 
 Shared Memory:
-    Shared memory: 0.0 GiB  --  (0.0%)
+    Shared memory: 0.6 MiB  --  (0.0%)
 
 Top 10 unique commands using memory:
 
-    clamd: 1.6 GiB
-    rspamd: 0.3 GiB
-    mariadbd: 0.0 GiB
-    fail2ban-server: 0.0 GiB
-    redis-server: 0.0 GiB
-    unattended-upgr: 0.0 GiB
-    nginx: 0.0 GiB
-    config: 0.0 GiB
-    freshclam: 0.0 GiB
-    znc: 0.0 GiB
+    clamd                1649.7 MiB
+    rspamd                294.9 MiB
+    mariadbd               30.0 MiB
+    fail2ban-server        17.1 MiB
+    redis-server            6.1 MiB
+    unattended-upgr         5.8 MiB
+    nginx                   3.3 MiB
+    config                  1.5 MiB
+    freshclam               1.4 MiB
+    znc                     1.1 MiB
 
 Processes using most memory:
 
-  pid     uid   tgid   total_vm      rss   pgtables_bytes   swapents   oom_score_adj  name
-    517   111    517     590364   422324          4395008     107099               0  clamd
-   1682   108   1682      67131    16509           421888       7811               0  rspamd
-   1680   108   1680      65038    14927           380928       8231               0  rspamd
-    584   108    584      64811    14737           393216       8513               0  rspamd
-   1677   108   1677      64811    14698           376832       8305               0  rspamd
-   1683   108   1683      64811    14614           376832       8614               0  rspamd
-    669   106    669     269508     7688           323584      12110               0  mariadbd
-    590     0    590     177664     4383           208896        343               0  fail2ban-server
-    581   112    581      16276     1567           110592        197               0  redis-server
-    587     0    587      27165     1488           110592        635               0  unattended-upgr
-
+  pid      uid    tgid    total_vm       rss    pgtables_bytes    swapents    oom_score_adj  name                  MiB
+    517    111     517      590364    422324           4395008      107099                0  clamd              1649.7
+   1682    108    1682       67131     16509            421888        7811                0  rspamd               64.5
+   1680    108    1680       65038     14927            380928        8231                0  rspamd               58.3
+    584    108     584       64811     14737            393216        8513                0  rspamd               57.6
+   1677    108    1677       64811     14698            376832        8305                0  rspamd               57.4
+   1683    108    1683       64811     14614            376832        8614                0  rspamd               57.1
+    669    106     669      269508      7688            323584       12110                0  mariadbd             30.0
+    590      0     590      177664      4383            208896         343                0  fail2ban-server      17.1
+    581    112     581       16276      1567            110592         197                0  redis-server          6.1
+    587      0     587       27165      1488            110592         635                0  unattended-upgr       5.8
 
 I wrote this program to improve my understanding of Rust by implementing a
 non-trivial utility in the language. I make no claims regarding its fitness of
-purpose. (There are certainly better language choices for processing text.)
+purpose.
 
 This program is capable of cleaning up or ignoring most log noise, but
 edge cases may still be lurking out there in the real world. This utility is not
 robust enough to handle corrupted logs (which are not unusual in the presence of
 memory pressure), unexpected linebreaks, or Murphy's law.
 
-Many variations of an omm-killer parsing utility already exist, so there's lots of
-prior art. Special thanks to John Siddle for sharing his version!
+Many variations of an omm-killer parsing utility already exist. Special thanks
+to John Siddle for sharing his version!
