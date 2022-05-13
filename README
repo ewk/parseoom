@@ -54,6 +54,8 @@ Processes using most memory:
     581    112     581       16276      1567            110592         197                0  redis-server          6.1
     587      0     587       27165      1488            110592         635                0  unattended-upgr       5.8
 
+Total RSS utilized by user processes: 2020.6 MiB
+
 I wrote this program to improve my understanding of Rust by implementing a
 non-trivial utility in the language. I make no claims regarding its fitness of
 purpose.

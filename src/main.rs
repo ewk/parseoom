@@ -122,6 +122,8 @@ fn parse_meminfo_shared(s: &str) -> Option<f64> {
 fn report_ps_usage(cleaned: &str) {
     const PS_LIST_RE: &str = r"(.*pid.+\bname\b)(?s)(.*)";
 
+    let mut rss_sum = 0; // sum of memory consumed by user processes
+
     // Capture the process header and find the position of the 'pid' column
     let re = Regex::new(PS_LIST_RE).unwrap();
     let ps_header = re
@@ -176,6 +178,12 @@ fn report_ps_usage(cleaned: &str) {
         for line in ps_matrix.iter() {
             *commands.entry(&line[pid_col + 8]).or_insert(0) +=
                 line[pid_col + 4].parse::<i64>().unwrap();
+        }
+
+        // Calculate total memory consumed by user processes
+
+        for value in commands.values() {
+            rss_sum += value;
         }
 
         // To sort the key (command name) by its value (RSS) we need to convert
@@ -242,6 +250,11 @@ fn report_ps_usage(cleaned: &str) {
                 (line[pid_col + 4].parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0  // size MiB
             );
         }
+
+        println!(
+            "\nTotal RSS utilized by user processes: {:.1} MiB",
+            (rss_sum as f64 * 4096.0) / 1024.0 / 1024.0
+        );
     } else {
         println!("No match for ps");
     }
