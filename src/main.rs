@@ -139,10 +139,8 @@ fn report_ps_usage(cleaned: &str) {
         .collect::<Vec<_>>();
     let pid_col = header_vec.iter().position(|x| x == "pid").unwrap();
 
-    // Capture the values in the process list after the header
-    let re = Regex::new(PS_LIST_RE).unwrap();
-
-    // Sort processes by memory used and report the commands using the most memory
+    // Capture the values in the process list after the header, sort the processes by memory used
+    // and report the commands using the most memory
     if let Some(x) = re.captures(cleaned) {
         let ps = x.get(2).unwrap().as_str().trim();
 
@@ -181,7 +179,6 @@ fn report_ps_usage(cleaned: &str) {
         }
 
         // Calculate total memory consumed by user processes
-
         for value in commands.values() {
             rss_sum += value;
         }
