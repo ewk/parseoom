@@ -366,7 +366,7 @@ mod tests {
         let re = Regex::new(TOTAL_RAM_RE).unwrap();
         let s = "Dec 20 03:17:52 localhost kernel: 75669.637758 5241544212132178 pages RAM\n Dec 20 03:17:52 localhost kernel: 75669.637798 132311 pages reserved";
         assert!(re.is_match(s));
-        assert_eq!(parse_meminfo_total(s), Some(2.0966176847999468e+16));
+        assert_eq!(parse_meminfo_total(s), Some(2.096_617_684_799_946_8e16));
     }
 
     #[test]
