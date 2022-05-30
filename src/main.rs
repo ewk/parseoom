@@ -119,7 +119,8 @@ fn parse_meminfo_shared(s: &str) -> Option<f64> {
     }
 }
 
-fn report_ps_usage(cleaned: &str) {
+// Report processes using most memory and return total RSS of memory used by applications.
+fn report_ps_usage(cleaned: &str) -> i64 {
     const PS_LIST_RE: &str = r"(.*pid.+\bname\b)(?s)(.*)";
 
     let mut rss_sum = 0; // sum of memory consumed by user processes
@@ -247,14 +248,11 @@ fn report_ps_usage(cleaned: &str) {
                 (line[pid_col + 4].parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0  // size MiB
             );
         }
-
-        println!(
-            "\nTotal RSS utilized by user processes: {:.1} MiB",
-            (rss_sum as f64 * 4096.0) / 1024.0 / 1024.0
-        );
     } else {
         println!("No match for ps");
     }
+
+    rss_sum
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -346,7 +344,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         (shmem_KiB / total_ram_KiB) * 100.0
     );
 
-    report_ps_usage(&cleaned);
+    let rss_sum = report_ps_usage(&cleaned);
+
+    println!(
+        "\nTotal RSS utilized by user processes: {:.1} MiB   --  ({:.1}%)",
+        (rss_sum as f64 * 4096.0) / 1024.0 / 1024.0,
+        ((rss_sum as f64 * 4096.0) / 1024.0) / total_ram_KiB * 100.0
+    );
 
     println!();
 
