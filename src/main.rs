@@ -10,6 +10,7 @@ use std::process;
 
 const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*?)(?-s:.*?[oO]ut of memory:){1}?";
 const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
+const PS_LIST_RE: &str = r"(.*pid.+\bname\b)(?s)(.*)";
 
 // Find total pages of RAM and return value in KiB
 fn parse_meminfo_total(s: &str) -> Option<f64> {
@@ -119,13 +120,17 @@ fn parse_meminfo_shared(s: &str) -> Option<f64> {
     }
 }
 
-// Report processes using most memory and return total RSS of memory used by applications.
-fn report_ps_usage(cleaned: &str) -> i64 {
-    const PS_LIST_RE: &str = r"(.*pid.+\bname\b)(?s)(.*)";
-
-    let mut rss_sum = 0; // sum of memory consumed by user processes
-
-    // Capture the process header and find the position of the 'pid' column
+// Split the process list header into a vector. Return the ps header as a vector along with the
+// position of the pid column.
+fn parse_ps_header(cleaned: &str) -> (Vec<String>, usize) {
+    // Split each line of the ps string at whitespace and add the line to a vector of strings.
+    //
+    //      [
+    //        ["Dec", "20", "03:17:52", "localhost", "kernel:", "75669.642775", "199", "0",
+    //          "199", "14838", "226", "102400", "14", "-250", "systemd-journal"],
+    //        ...
+    //      ]
+    //
     let re = Regex::new(PS_LIST_RE).unwrap();
     let ps_header = re
         .captures(cleaned)
@@ -140,119 +145,128 @@ fn report_ps_usage(cleaned: &str) -> i64 {
         .collect::<Vec<_>>();
     let pid_col = header_vec.iter().position(|x| x == "pid").unwrap();
 
-    // Capture the values in the process list after the header, sort the processes by memory used
-    // and report the commands using the most memory
+    (header_vec, pid_col)
+}
+
+// Capture the values in the process list after the header, including the surrounding log metadata,
+// and return the list as a &str.
+fn parse_ps_list(cleaned: &str) -> Option<&str> {
+    // We're keeping the ps entry lines, including log entry noise.
+    //
+    //      "Dec 20 03:17:52 localhost kernel: 75669.642775     199     0   199    14838 \n
+    //          226   102400       14          -250 systemd-journal"
+    //
+    let re = Regex::new(PS_LIST_RE).unwrap();
+
     if let Some(x) = re.captures(cleaned) {
         let ps = x.get(2).unwrap().as_str().trim();
-
-        // Convert the process list into a matrix of strings.
-        // We're starting with the raw list, including log entry noise.
-        //
-        //      "Dec 20 03:17:52 localhost kernel: 75669.642775     199     0   199    14838 \n
-        //          226   102400       14          -250 systemd-journal"
-        //
-        // First split each line at whitespace into a matrix of strings:
-        //
-        //      [
-        //        ["Dec", "20", "03:17:52", "localhost", "kernel:", "75669.642775", "199", "0",
-        //          "199", "14838", "226", "102400", "14", "-250", "systemd-journal"],
-        //        ...
-        //      ]
-        let mut ps_matrix = ps
-            .lines()
-            .map(|s| {
-                s.trim()
-                    .split_whitespace()
-                    .map(String::from)
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>();
-
-        // Identify the unique commands using the most memory.
-        // Iterate over each line in the matrix to create a map
-        // of unique commands with their total RSS usage:
-        //
-        //      {"agetty": 59, "anvil": 189, ...}
-        let mut commands: BTreeMap<&str, i64> = BTreeMap::new();
-        for line in ps_matrix.iter() {
-            *commands.entry(&line[pid_col + 8]).or_insert(0) +=
-                line[pid_col + 4].parse::<i64>().unwrap();
-        }
-
-        // Calculate total memory consumed by user processes
-        for value in commands.values() {
-            rss_sum += value;
-        }
-
-        // To sort the key (command name) by its value (RSS) we need to convert
-        // the map to a vector:
-        //
-        //      [("clamd", 422324), ("rspamd", 75485), ...]
-        let mut command_vec = Vec::from_iter(commands.iter());
-        command_vec.sort_by(|a, b| a.1.cmp(b.1).reverse());
-
-        // Now we have a list of process names sorted by RSS usage we can
-        // print the top consumers by name.
-        println!("\nTop 10 unique commands using memory:\n");
-        for line in command_vec.iter().take(10) {
-            let rss = *line.1 as f64;
-            println!(
-                "    {:15}    {:8.1} MiB",
-                line.0,
-                (rss * 4096.0) / 1024.0 / 1024.0
-            );
-        }
-
-        // Sort and display the process list.
-        // The format may change depending on kernel version, but the number of columns and the
-        // position of pid, rss, and name should remain fixed, ie:
-        //
-        //      [  pid  ]   uid  tgid total_vm      rss pgtables_bytes swapents oom_score_adj name
-        //
-        // Print the header matched from the regex header_vec first.
-        println!("\nProcesses using most memory:\n");
-        println!(
-            "{:^7}  {:>8}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  {:>8}",
-            header_vec[pid_col],     // pid
-            header_vec[pid_col + 1], // uid
-            header_vec[pid_col + 2],
-            header_vec[pid_col + 3],
-            header_vec[pid_col + 4], // rss
-            header_vec[pid_col + 5],
-            header_vec[pid_col + 6],
-            header_vec[pid_col + 7],
-            header_vec[pid_col + 8], // name
-            "MiB"
-        );
-
-        // Sort and display the entire process list from the matrix we started with.
-        // The RSS field must be converted from a string to an integer in order to sort.
-        ps_matrix.sort_by(|a, b| {
-            (a[pid_col + 4].parse::<i64>().unwrap()).cmp(&b[pid_col + 4].parse::<i64>().unwrap())
-        });
-
-        // Iterate over the sorted process matrix and display the top results.
-        // This has to run last so the iterator can consume ps_matrix.
-        for line in ps_matrix.into_iter().rev().take(10) {
-            println!(
-                "{:>7}  {:>8}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  {:>8.1}",
-                line[pid_col],     // pid
-                line[pid_col + 1], // uid
-                line[pid_col + 2],
-                line[pid_col + 3],
-                line[pid_col + 4], // rss
-                line[pid_col + 5],
-                line[pid_col + 6],
-                line[pid_col + 7],
-                line[pid_col + 8], // name
-                (line[pid_col + 4].parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0  // size MiB
-            );
-        }
+        Some(ps)
     } else {
-        println!("No match for ps");
+        None
+    }
+}
+
+// Transform the process list into a matrix of strings
+fn parse_ps_matrix(ps: &str) -> Vec<Vec<String>> {
+    let ps_matrix = ps
+        .lines()
+        .map(|s| {
+            s.trim()
+                .split_whitespace()
+                .map(String::from)
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    ps_matrix
+}
+
+// Parse the ps matrix and return a map of commands -> RSS.
+fn top_consumers(
+    ps_matrix: &[Vec<String>],
+    pid_col: usize,
+) -> std::collections::BTreeMap<String, i64> {
+    // Iterate over each line in the matrix to create a map
+    // of unique commands with their total RSS usage.
+    //
+    //      {"agetty": 59, "anvil": 189, ...}
+    //
+    let mut commands: BTreeMap<String, i64> = BTreeMap::new();
+
+    for line in ps_matrix.iter() {
+        *commands.entry(line[pid_col + 8].clone()).or_insert(0) +=
+            line[pid_col + 4].parse::<i64>().unwrap();
     }
 
-    rss_sum
+    commands
+}
+
+// Print the commands using the most memory.
+fn print_top_commands(commands: BTreeMap<String, i64>) {
+    // To sort the key (command name) by its value (RSS) we need to convert
+    // the map to a vector:
+    let mut command_vec = Vec::from_iter(commands.iter());
+    command_vec.sort_by(|a, b| a.1.cmp(b.1).reverse());
+
+    // Now we have a list of command names sorted by RSS usage we can
+    // print the top consumers by name.
+    println!("\nTop 10 unique commands using memory:\n");
+    for line in command_vec.iter().take(10) {
+        let rss = *line.1 as f64;
+        println!(
+            "    {:15}    {:8.1} MiB",
+            line.0,
+            (rss * 4096.0) / 1024.0 / 1024.0
+        );
+    }
+}
+
+// Sort and print the process list.
+fn print_ps_list(mut ps_matrix: Vec<Vec<String>>, header_vec: Vec<String>, pid_col: usize) {
+    // Sort and display the process list.
+    // The format may change depending on kernel version, but the number of columns and the
+    // position of pid, rss, and name should remain fixed, ie:
+    //
+    //      [  pid  ]   uid  tgid total_vm      rss pgtables_bytes swapents oom_score_adj name
+    //
+    // Print the header from header_vec first.
+    println!("\nProcesses using most memory:\n");
+    println!(
+        "{:^7}  {:>8}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  {:>8}",
+        header_vec[pid_col],     // pid
+        header_vec[pid_col + 1], // uid
+        header_vec[pid_col + 2],
+        header_vec[pid_col + 3],
+        header_vec[pid_col + 4], // rss
+        header_vec[pid_col + 5],
+        header_vec[pid_col + 6],
+        header_vec[pid_col + 7],
+        header_vec[pid_col + 8], // name
+        "MiB"
+    );
+
+    // Sort and display the entire process list from the matrix we started with.
+    // The RSS field must be converted from a string to an integer in order to sort.
+    ps_matrix.sort_by(|a, b| {
+        (a[pid_col + 4].parse::<i64>().unwrap()).cmp(&b[pid_col + 4].parse::<i64>().unwrap())
+    });
+
+    // Iterate over the sorted process matrix and display the top results.
+    for line in ps_matrix.into_iter().rev().take(10) {
+        println!(
+            "{:>7}  {:>8}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  {:>8.1}",
+            line[pid_col],     // pid
+            line[pid_col + 1], // uid
+            line[pid_col + 2],
+            line[pid_col + 3],
+            line[pid_col + 4], // rss
+            line[pid_col + 5],
+            line[pid_col + 6],
+            line[pid_col + 7],
+            line[pid_col + 8], // name
+            (line[pid_col + 4].parse::<f64>().unwrap() * 4096.0) / 1024.0 / 1024.0  // size MiB
+        );
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -311,6 +325,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let total_1_GiB_hugepages_GiB = g / 1024.0 / 1024.0;
     let unreclaimable_slab_KiB = parse_meminfo_slab(&cleaned).expect("No match for slab.");
     let shmem_KiB = parse_meminfo_shared(&cleaned).expect("No match for shmem");
+    let (header_vec, pid_col) = parse_ps_header(&cleaned);
+    let ps_string = parse_ps_list(&cleaned).unwrap();
+    let ps_matrix = parse_ps_matrix(ps_string);
+    let commands = top_consumers(&ps_matrix, pid_col);
+    let mut rss_sum = 0;
+
+    // Calculate total memory consumed by user processes
+    for value in commands.values() {
+        rss_sum += value;
+    }
 
     println!("\nMemory total:");
     println!("    Total RAM: {:.1} GiB ", total_ram_KiB / 1024.0 / 1024.0);
@@ -344,8 +368,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         (shmem_KiB / total_ram_KiB) * 100.0
     );
 
-    let rss_sum = report_ps_usage(&cleaned);
-
+    print_top_commands(commands);
+    print_ps_list(ps_matrix, header_vec, pid_col);
     println!(
         "\nTotal RSS utilized by user processes: {:.1} MiB   --  ({:.1}%)",
         (rss_sum as f64 * 4096.0) / 1024.0 / 1024.0,
