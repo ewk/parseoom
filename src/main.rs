@@ -206,7 +206,7 @@ fn print_top_commands(commands: BTreeMap<String, i64>) {
     // To sort the key (command name) by its value (RSS) we need to convert
     // the map to a vector:
     let mut command_vec = Vec::from_iter(commands.iter());
-    command_vec.sort_by(|a, b| a.1.cmp(b.1).reverse());
+    command_vec.sort_by(|a, b| b.1.cmp(a.1));
 
     // Now we have a list of command names sorted by RSS usage we can
     // print the top consumers by name.
@@ -248,11 +248,11 @@ fn print_ps_list(mut ps_matrix: Vec<Vec<String>>, header_vec: Vec<String>, pid_c
     // Sort and display the entire process list from the matrix we started with.
     // The RSS field must be converted from a string to an integer in order to sort.
     ps_matrix.sort_by(|a, b| {
-        (a[pid_col + 4].parse::<i64>().unwrap()).cmp(&b[pid_col + 4].parse::<i64>().unwrap())
+        (b[pid_col + 4].parse::<i64>().unwrap()).cmp(&a[pid_col + 4].parse::<i64>().unwrap())
     });
 
     // Iterate over the sorted process matrix and display the top results.
-    for line in ps_matrix.into_iter().rev().take(10) {
+    for line in ps_matrix.into_iter().take(10) {
         println!(
             "{:>7}  {:>8}  {:>6}  {:>10}  {:>8}  {:>16}  {:>10}  {:>15}  {:<15}  {:>8.1}",
             line[pid_col],     // pid
