@@ -8,8 +8,8 @@ use std::fs;
 use std::iter::FromIterator;
 use std::process;
 
-const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*?)(?-s:.*?[oO]ut of memory:){1}?";
-const PS_LIST_END_RE: &str = r"Out of memory:|oom-kill:|Memory cgroup";
+const OOM_KILL_RE: &str = r"(?s)((\w+\s)?invoked oom-killer.*?)(?-s:.*?[oO]ut of memory:?){1}?";
+const PS_LIST_END_RE: &str = r"Out of memory:?|oom-kill:|Memory cgroup";
 const PS_LIST_RE: &str = r"(.*pid.+\bname\b)(?s)(.*)";
 
 // Find total pages of RAM and return value in KiB
