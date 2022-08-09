@@ -171,10 +171,7 @@ fn parse_ps_matrix(ps: &str) -> Vec<Vec<String>> {
     let ps_matrix = ps
         .lines()
         .map(|s| {
-            s.trim()
-                .split_whitespace()
-                .map(String::from)
-                .collect::<Vec<_>>()
+            s.split_whitespace().map(String::from).collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
 
