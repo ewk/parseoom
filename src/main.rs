@@ -282,7 +282,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let filename = args.next().expect("Didn't get a filename");
 
     // read from beginning of last oom kill to end of log
-    let input = fs::read_to_string(filename).expect("Could not read filename");
+    let input = fs::read_to_string(&filename).expect("Could not read filename");
     let i = input
         .rfind("invoked oom-killer")
         .ok_or("string 'invoked oom-killer' not found")?;
@@ -293,18 +293,45 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mat = oom_kill_re
         .captures(contents)
         .ok_or("Could not match an oom kill message in this file")?;
+
     let oom = mat
         .get(0)
         .expect("Match for 'invoked oom-killer' not found")
-        .as_str()
-        .lines(); // convert match to a str iterator
+        .as_str();
+
+    if oom.contains("Memory cgroup out of memory") {
+        println!("Out of memory killer was triggered by exceeding cgroup limit.");
+        let output = process::Command::new("grep")
+            .arg("-c")
+            .arg("invoked oom-killer")
+            .arg(&filename)
+            .output()
+            .expect("failed to execute process");
+        print!(
+            "grep -c 'invoked oom-killer': {}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+
+        let output = process::Command::new("grep")
+            .arg("-c")
+            .arg("Memory cgroup out of memory")
+            .arg(&filename)
+            .output()
+            .expect("failed to execute process");
+        print!(
+            "grep -c 'Memory cgroup out of memory': {}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+
+        std::process::exit(0);
+    }
 
     // Clean up the oom kill report for ease of parsing
     let mut cleaned = String::new();
     let oom_end = Regex::new(PS_LIST_END_RE).unwrap();
 
     // Strip out end of report summary and PID column brackets
-    for line in oom {
+    for line in oom.lines() {
         // These patterns appear immediately after the end of the ps list.
         // Do not include them in the new string so we know where to stop.
         if oom_end.is_match(line) {
