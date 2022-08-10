@@ -18,24 +18,10 @@ fn parse_meminfo_total(s: &str) -> Option<f64> {
     const PAGES_RESERVED_RE: &str = r"(\d+) pages reserved";
 
     let re = Regex::new(PAGES_RAM_RE).unwrap();
-    let pages_ram = re
-        .captures(s)
-        .unwrap()
-        .get(1)
-        .unwrap()
-        .as_str()
-        .parse::<f64>()
-        .unwrap();
+    let pages_ram = re.captures(s)?.get(1)?.as_str().parse::<f64>().unwrap();
 
     let re = Regex::new(PAGES_RESERVED_RE).unwrap();
-    let pages_reserved = re
-        .captures(s)
-        .unwrap()
-        .get(1)
-        .unwrap()
-        .as_str()
-        .parse::<f64>()
-        .unwrap();
+    let pages_reserved = re.captures(s)?.get(1)?.as_str().parse::<f64>().unwrap();
 
     // subtract reserved pages from the RAM total, which may not agree with what other tools report
     let total_ram_kib = ((pages_ram - pages_reserved) * 4096.0) / 1024.0;
@@ -50,7 +36,7 @@ fn parse_meminfo_swap(s: &str) -> Option<f64> {
     let re = Regex::new(FREE_SWAP_RE).unwrap();
 
     if let Some(x) = re.captures(s) {
-        let swap = x.get(1).unwrap().as_str().parse::<f64>().unwrap();
+        let swap = x.get(1)?.as_str().parse::<f64>().unwrap();
         let swap = swap * (2048.0 / 1.024);
         Some(swap)
     } else {
@@ -66,7 +52,7 @@ fn parse_meminfo_slab(s: &str) -> Option<f64> {
     let re = Regex::new(UNRECLAIMABLE_SLAB_RE).unwrap();
 
     if let Some(x) = re.captures(s) {
-        let slab = x.get(1).unwrap().as_str();
+        let slab = x.get(1)?.as_str();
         let slab_kib = (slab.parse::<f64>().unwrap() * 4096.0) / 1024.0;
         Some(slab_kib)
     } else {
@@ -112,7 +98,7 @@ fn parse_meminfo_shared(s: &str) -> Option<f64> {
     let re = Regex::new(SHMEM_RE).unwrap();
 
     if let Some(x) = re.captures(s) {
-        let shmem = x.get(1).unwrap().as_str();
+        let shmem = x.get(1)?.as_str();
         let shmem_kib = (shmem.parse::<f64>().unwrap() * 4096.0) / 1024.0;
         Some(shmem_kib)
     } else {
@@ -122,7 +108,7 @@ fn parse_meminfo_shared(s: &str) -> Option<f64> {
 
 // Split the process list header into a vector. Return the ps header as a vector along with the
 // position of the pid column.
-fn parse_ps_header(cleaned: &str) -> (Vec<String>, usize) {
+fn parse_ps_header(cleaned: &str) -> Option<(Vec<String>, usize)> {
     // Split each line of the ps string at whitespace and add the line to a vector of strings.
     //
     //      [
@@ -132,20 +118,14 @@ fn parse_ps_header(cleaned: &str) -> (Vec<String>, usize) {
     //      ]
     //
     let re = Regex::new(PS_LIST_RE).unwrap();
-    let ps_header = re
-        .captures(cleaned)
-        .unwrap()
-        .get(1)
-        .unwrap()
-        .as_str()
-        .trim();
+    let ps_header = re.captures(cleaned)?.get(1)?.as_str().trim();
     let header_vec = ps_header
         .split_whitespace()
         .map(str::to_string)
         .collect::<Vec<_>>();
-    let pid_col = header_vec.iter().position(|x| x == "pid").unwrap();
+    let pid_col = header_vec.iter().position(|x| x == "pid")?;
 
-    (header_vec, pid_col)
+    Some((header_vec, pid_col))
 }
 
 // Capture the values in the process list after the header, including the surrounding log metadata,
@@ -159,7 +139,7 @@ fn parse_ps_list(cleaned: &str) -> Option<&str> {
     let re = Regex::new(PS_LIST_RE).unwrap();
 
     if let Some(x) = re.captures(cleaned) {
-        let ps = x.get(2).unwrap().as_str().trim();
+        let ps = x.get(2)?.as_str().trim();
         Some(ps)
     } else {
         None
@@ -170,9 +150,7 @@ fn parse_ps_list(cleaned: &str) -> Option<&str> {
 fn parse_ps_matrix(ps: &str) -> Vec<Vec<String>> {
     let ps_matrix = ps
         .lines()
-        .map(|s| {
-            s.split_whitespace().map(String::from).collect::<Vec<_>>()
-        })
+        .map(|s| s.split_whitespace().map(String::from).collect::<Vec<_>>())
         .collect::<Vec<_>>();
 
     ps_matrix
@@ -276,10 +254,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     args.next();
 
-    let filename = args.next().expect("Didn't get a filename");
+    let filename = args.next().ok_or("Filename not provided")?;
 
     // read from beginning of last oom kill to end of log
-    let input = fs::read_to_string(&filename).expect("Could not read filename");
+    let input = fs::read_to_string(&filename)?;
     let i = input
         .rfind("invoked oom-killer")
         .ok_or("string 'invoked oom-killer' not found")?;
@@ -303,7 +281,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .arg("invoked oom-killer")
             .arg(&filename)
             .output()
-            .expect("failed to execute process");
+            .expect("failed to execute process 'grep'");
         print!(
             "grep -c 'invoked oom-killer': {}",
             String::from_utf8_lossy(&output.stdout)
@@ -314,7 +292,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .arg("Memory cgroup out of memory")
             .arg(&filename)
             .output()
-            .expect("failed to execute process");
+            .expect("failed to execute process 'grep'");
         print!(
             "grep -c 'Memory cgroup out of memory': {}",
             String::from_utf8_lossy(&output.stdout)
@@ -342,15 +320,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         cleaned.push('\n');
     }
 
-    let total_ram_KiB = parse_meminfo_total(&cleaned).expect("No match for total pages RAM.");
-    let free_swap_KiB = parse_meminfo_swap(&cleaned).expect("No match for swap.");
-    let (m, g) = parse_meminfo_hugepages(&cleaned).expect("No match for huge pages.");
+    let total_ram_KiB = parse_meminfo_total(&cleaned).ok_or("No match for total pages RAM.")?;
+    let free_swap_KiB = parse_meminfo_swap(&cleaned).ok_or("No match for swap.")?;
+    let (m, g) = parse_meminfo_hugepages(&cleaned).ok_or("No match for huge pages.")?;
     let total_2_MiB_hugepages_MiB = m / 1024.0;
     let total_1_GiB_hugepages_GiB = g / 1024.0 / 1024.0;
-    let unreclaimable_slab_KiB = parse_meminfo_slab(&cleaned).expect("No match for slab.");
-    let shmem_KiB = parse_meminfo_shared(&cleaned).expect("No match for shmem");
-    let (header_vec, pid_col) = parse_ps_header(&cleaned);
-    let ps_string = parse_ps_list(&cleaned).unwrap();
+    let unreclaimable_slab_KiB = parse_meminfo_slab(&cleaned).ok_or("No match for slab.")?;
+    let shmem_KiB = parse_meminfo_shared(&cleaned).ok_or("No match for shmem")?;
+    let (header_vec, pid_col) = parse_ps_header(&cleaned).ok_or("Could not find PID column")?;
+    let ps_string = parse_ps_list(&cleaned).ok_or("Failed to parse process list")?;
     let ps_matrix = parse_ps_matrix(ps_string);
     let commands = top_consumers(&ps_matrix, pid_col);
     let mut rss_sum = 0;
