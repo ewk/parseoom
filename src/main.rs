@@ -106,6 +106,89 @@ fn parse_meminfo_shared(s: &str) -> Option<f64> {
     }
 }
 
+// Print largest unreclaimable slab caches
+fn print_unreclaimable_slab(cleaned: &str) {
+    // Starting in v4.15 the kernel will report the total size of all unreclaimable slabs if
+    // unreclaimable slab usage is greater than user memory. This report is similar to the
+    // process list and is sorted the same way.
+    //
+    // [261004.638833] Unreclaimable slab info:
+    // [261004.641825] Name                      Used          Total
+    // [261004.645467] nfs_commit_data           15KB         15KB
+    // --->8
+    // [261005.268039] kmem_cache               118KB        118KB
+    // [261005.271794] Tasks state (memory values in pages):
+
+    const SLAB_INFO_RE: &str = r"(?sx:      # allow . to match \n; ignore whitespace
+        (Unreclaimable\sslab\sinfo:)
+        (.*?Name\s+Used\s+Total)            # match header
+        (.*KB)                              # match lines with a slab entry
+        (.*Tasks\sstate)                    # match end of slab list
+        )";
+
+    let re: Regex = Regex::new(SLAB_INFO_RE).unwrap();
+
+    // Return early if unreclaimable slab wasn't reported by the oom-killer
+    if !re.is_match(cleaned) {
+        return;
+    }
+
+    let slab_header = re
+        .captures(cleaned)
+        .unwrap()
+        .get(2)
+        .unwrap()
+        .as_str()
+        .trim();
+
+    let slab_header_vec = slab_header
+        .split_whitespace()
+        .map(str::to_string)
+        .collect::<Vec<_>>();
+
+    let slab_name_col = slab_header_vec.iter().position(|x| x == "Name").unwrap();
+
+    let slabs = re
+        .captures(cleaned)
+        .unwrap()
+        .get(3)
+        .unwrap()
+        .as_str()
+        .trim();
+
+    let mut slab_vec = slabs
+        .lines()
+        .map(|s| {
+            s.replace("KB", "")
+                .split_whitespace()
+                .map(String::from)
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    slab_vec.sort_by(|a, b| {
+        (b[slab_name_col + 2].parse::<i64>().unwrap())
+            .cmp(&a[slab_name_col + 2].parse::<i64>().unwrap())
+    });
+
+    println!("\n    Largest unreclaimable slabs:\n");
+    println!(
+        "    {:<24} {:>15} {:>15}",
+        slab_header_vec[slab_name_col],     // name
+        slab_header_vec[slab_name_col + 1], // used
+        slab_header_vec[slab_name_col + 2], // total
+    );
+
+    for line in slab_vec.into_iter().take(10) {
+        println!(
+            "    {:<24} {:>12} KB {:>12} KB",
+            line[slab_name_col],     // name
+            line[slab_name_col + 1], // used
+            line[slab_name_col + 2], // total
+        );
+    }
+}
+
 // Split the process list header into a vector. Return the ps header as a vector along with the
 // position of the pid column.
 fn parse_ps_header(cleaned: &str) -> Option<(Vec<String>, usize)> {
@@ -362,6 +445,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         unreclaimable_slab_KiB / 1024.0,
         (unreclaimable_slab_KiB / total_ram_KiB) * 100.0
     );
+
+    print_unreclaimable_slab(&cleaned);
 
     println!("\nShared Memory:");
     println!(
